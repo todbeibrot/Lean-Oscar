@@ -75,8 +75,7 @@ def julia' (command : String) (val : Expr) {u} (α : Q(Type u)) (trace : Bool :=
   unsafe evalExpr Expr q(Expr) e
 
 -- sends the mrdi to julia and it should send it back
-def echo (mrdi : Mrdi) : MetaM Mrdi := do
-  return ← julia "echo" mrdi True
+def echo (mrdi : Mrdi) : MetaM Mrdi := julia "echo" mrdi True
 
 elab "#echo " val:term : command =>
   open Lean Lean.Elab Command Term in

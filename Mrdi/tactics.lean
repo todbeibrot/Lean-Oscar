@@ -76,10 +76,10 @@ elab_rules : tactic
     matrix_inverse A goal
 
 def A : Matrix (Fin 3) (Fin 3) ℚ := !![3, 0, 4; 5, 10, 6; 1, 2, 3]
-def A_inv : Matrix (Fin 3) (Fin 3) ℚ := by matrix_inverse A
-#eval A_inv
-#print A_inv
-#eval A * A_inv
+-- def A_inv : Matrix (Fin 3) (Fin 3) ℚ := by matrix_inverse A
+-- #eval A_inv
+-- #print A_inv
+-- #eval A * A_inv
 
 end Matrix_inverse
 
@@ -126,31 +126,15 @@ section Permutation
     none
 
 -- TODO better names
-private partial def Set.toList {u} {G : Q(Type u)} (S : Q(Set $G)) : MetaM (List Q($G)) := do
-  match S with
-    | ~q(Set.singleton $a) => return [q($a)]
-    | ~q(Set.insert $a $s) => return q($a) :: (← toList q($s))
-    | ~q(Insert.insert $a $s) => return q($a) :: (← toList q($s))
-    | ~q(Singleton.singleton $a) => return [q($a)]
-    | e => do
-        try
-          let some (_, _, _, a, s) := app5? e ``Insert.insert | throwError "not an insert"
-          let a : Q($G) := a
-          return a :: (← toList s)
-        catch _ => do
-          let some (_, _, _, a) := app4? e ``Singleton.singleton | throwError s!"not a singleton: {e}"
-          return [a]
-
--- TODO better names
-private partial def Set.toList' {u} {G : Q(Type u)} (S : Q(Set $G)) : MetaM Q(List $G) := do
+private partial def Set.toList {u} {G : Q(Type u)} (S : Q(Set $G)) : MetaM Q(List $G) := do
   match S with
     | ~q(Set.singleton $a) =>
         return q([$a])
     | ~q(Set.insert $a $s) => do
-        let as : Q(List $G) ← toList' q($s)
+        let as : Q(List $G) ← toList q($s)
         return q(($a) :: $as)
     | ~q(Insert.insert $a $s) => do
-        let as : Q(List $G) ← toList' q($s)
+        let as : Q(List $G) ← toList q($s)
         return q(($a) :: $as)
     | ~q(Singleton.singleton $a) =>
         return q([$a])
@@ -159,70 +143,37 @@ private partial def Set.toList' {u} {G : Q(Type u)} (S : Q(Set $G)) : MetaM Q(Li
           let some (_, _, _, a, s) := app5? e ``Insert.insert | throwError "not an insert"
           let a : Q($G) := a
           let s : Q(Set $G) := s
-          let as : Q(List $G) ← toList' q($s)
+          let as : Q(List $G) ← toList q($s)
           return q($a :: $as)
         catch _ => do
           let some (_, _, _, a) := app4? e ``Singleton.singleton | throwError s!"not a singleton: {e}"
           let a : Q($G) := a
           return q([$a])
 
-/- private def bbb {u} {G : Q(Type u)} {x : Q($G)} {S : Q(Set $G)} (_ : Q($x ∈ $S))
-  : MetaM (Q($G) × Q(Set $G)) :=
-    return (q($x), q($S)) -/
-
-def PermsToList {u} (α : Q(Type $u)) (g : Q($α)) (gens : Q(Set $α)) : MetaM $ Q(Type $u) × Q(List $α) := do
-  let gens : Q(List $α) ← Set.toList' gens
-  return (q($α), q($g :: $gens))
-
-def PermsToList' {u} (α : Q(Type $u)) (g : Q($α)) (gens : Q(Set $α)) : MetaM $ Q(List $α) := do
-  --let gs : Q(List $α) ← Set.toList' gens
-  --let x : Q(List $α) := q($g :: $gs)
-  let y : Q(List $α) := q([$g])
-  return q(List.cons $g List.nil)
-
-
-def test3 {α : Q(Type)} (val : Q($α)) : MetaM Unit := do
-  let α : Q(Type) ← inferType val
-  let val : Q($α) := val
-  let _ ← synthInstanceQ q(ToMrdi $α)
-  return
-
-def test4 (val : Expr) : MetaM Unit := do
-  let α : Q(Type) ← inferType val
-  let val : Q($α) := val
-  let α : Q(Type) ← instantiateMVars (← reduce α)
-  logInfo α
-  let _ ← synthInstanceQ q(Inhabited $α)
-  let _ ← synthInstanceQ q(ToMrdi $α)
-  return
+def PermsToList (u) (α : Q(Type $u)) (g : Q($α)) (gens : Q(Set $α)) : MetaM $ Q(List $α) := do
+  let gens : Q(List $α) ← Set.toList gens
+  return q($g :: $gens)
 
 def permutation (goal : MVarId) : TacticM Unit := do
   goal.withContext do
-  --let (α, m, n) ← matrix_type ql(v) tA
-    let t ← goal.getType
-    let some (γ, _, _, g, G) := app5? t ``Membership.mem | throwError "not a goal of type g ∈ G"
-    let ⟨u', t3, γ⟩ ← inferTypeQ γ
-    let .sort u ← instantiateMVars (← whnf (← inferType γ)) | unreachable!
-    let some _ := u.dec | throwError "not a type{indentExpr γ}"
-    let some (β, _, gens) :=  G.app3? ``Group.closure | throwError "G is not a Group.closure"
-    let u := ql(u')
-    let β' ← instantiateMVars (← whnf (γ))
-    have α' : Q(Type $u) := β'
-    --let t2 := q(FreeGroup $α')
+    let goal_type ← goal.getType
+    let some (g_type, _, _, g, closure_set) := app5? goal_type ``Membership.mem | throwError "not a goal of type g ∈ G"
+    let .sort sort_u ← inferType g_type | throwError "not a sort"
+    let some α := app1? g_type ``Equiv.Perm | throwError "not an Equiv"
+    have α : Q(Type) := α
+    let f_type := q(FreeGroup $α)
+    let some u := sort_u.dec | throwError "not a type{indentExpr (.sort sort_u)}"
+    have g_type : Q(Type $u) := g_type
+    let some (_, _, gens) :=  closure_set.app3? ``Group.closure | throwError "G is not a Group.closure"
+    let g_and_perms ← PermsToList u g_type g gens
 
-    let x := PermsToList γ g gens
-    let b ← PermsToList' α' g gens
-    let b' ← instantiateMVars (← whnf (b))
-    have b'' := b'
-    --let t2 := q(FreeGroup $α')
-    let (α, l) ← x
-    have α : Q(Type $u) := α
-    let t2 := q(FreeGroup $α)
-    have y' : Expr := l
-    let y : Expr ← instantiateMVars (← reduce y')
-    let n : Q(ℕ) := q(2)
-    test4 b''
-    --let x ← julia' "permutation" y t2
+    let _ ← unsafe evalExpr (List (Equiv.Perm (Fin 5))) q(List (Equiv.Perm (Fin 5))) g_and_perms
+
+    let x ← julia' "echo" g_and_perms q(List (Equiv.Perm (Fin 5)))
+    logInfo x
+
+    --let x ← julia' "permutation" b f_type
+    --logInfo x
     return
 
 /- Solves goals of type `x ∈ Group.closure {a, b, c}` where x, a, b, c are permutations -/
@@ -238,24 +189,10 @@ def b2 : Equiv.Perm (Fin 5) := c[4, 3]
 def b3 : Equiv.Perm (Fin 5) := c[3, 2]
 def b4 : Equiv.Perm (Fin 5) := c[3, 1]
 
-#synth Inhabited (List (Fin 5 ≃ Fin 5))
-
-
 theorem test2 : a ∈ Group.closure {b1, b2, b3, b4} := by
   --permutation
   sorry
 
-
 end Permutation
-
-
-
-syntax "test5 " : tactic
-elab_rules : tactic
-  | `(tactic| test5) => do
-
-    return
-
-
 
 end Mrdi

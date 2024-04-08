@@ -1,5 +1,1 @@
-{
-    "_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","1.0.0-DEV-fbd34b88fbedbbcb729a1e2ea5037b1860cda204"]},
-    "_type":{"name":"Matrix","params":"Base.Int"},
-    "data":[["1","2"],["3","4"]]
-}
+{"data":[["3//1","0//1","4//1"],["5//1","10//1","6//1"],["1//1","2//1","3//1"]],"_type":{"params":"QQFieldElem","name":"Matrix"},"_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","0.13.0"]}}
