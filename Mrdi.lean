@@ -37,9 +37,9 @@ def l : List (Fin 10) := by load_file "array"
 
 
 def p : Equiv.Perm (Fin 5) := c[2, 3, 1]
-#writeMrdi p to "lean_perm"
-def p2 : Equiv.Perm (Fin 5) := by load_file "lean_perm"
-#readMrdi Equiv.Perm (Fin 5) from "lean_perm"
+--#writeMrdi p to "lean_perm"
+--def p2 : Equiv.Perm (Fin 5) := by load_file "lean_perm"
+--#readMrdi Equiv.Perm (Fin 5) from "lean_perm"
 --#eval p
 --#eval p2
 --#echo p doesn't work cause p and p2 are not def equal. They still evaluate to the same value.

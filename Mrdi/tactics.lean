@@ -193,6 +193,8 @@ theorem test2 : a ∈ Group.closure {b1, b2, b3, b4} := by
   --permutation
   sorry
 
+-- TODO ToExpr (List (Equiv.Perm (Fin 5)))
+
 end Permutation
 
 end Mrdi
