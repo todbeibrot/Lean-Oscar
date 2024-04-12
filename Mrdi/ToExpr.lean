@@ -117,3 +117,14 @@ instance : ToExpr (Equiv.Perm (Fin (n + 1))) where
     return q((List.map List.formPerm $l').prod)
 
 end Permutations
+
+section FreeGroup
+
+instance {α : Type u}  [ToExpr α] [DecidableEq α] [ToLevel.{u}] : ToExpr $ FreeGroup α where
+  toTypeExpr := mkApp (mkConst ``FreeGroup) (toTypeExpr α)
+  toExpr g :=
+    have eα : Q(Type $(toLevel.{u})) := toTypeExpr α
+    have wordE : Q(List ($eα × Bool)) := toExpr g.toWord
+    q(FreeGroup.mk $wordE)
+
+end FreeGroup
