@@ -104,14 +104,16 @@ open Equiv Equiv.Perm
 instance : ToExpr (Equiv.Perm (Fin (n + 1))) where
   toTypeExpr := mkApp (mkConst ``Equiv.Perm) (toTypeExpr (Fin n))
   toExpr p := Id.run <| do
-    let ⟨cycles, _⟩ := cycleFactors p
+    let ⟨cycles, _⟩ := Equiv.Perm.cycleFactors p
     let mut l : List (List (Fin (n + 1))) := []
     for cycle in cycles do
       for i in List.range (n + 1) do
         if cycle.toFun i ≠ i then
-          let aux : List (Fin (n + 1)) := cycle.toList i
+          let aux : List (Fin (n + 1)) := p.toList i
           l := aux :: l
           break
-    return q((List.map List.formPerm $l).prod)
+    have n' : Q(ℕ) := toExpr n
+    have l' : Q(List (List (Fin ($n' + 1)))) := toExpr l
+    return q((List.map List.formPerm $l').prod)
 
 end Permutations
