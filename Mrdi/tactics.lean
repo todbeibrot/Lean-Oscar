@@ -4,7 +4,7 @@ import Mrdi.randomstuff
 import Mrdi.fromMrdi
 import Mrdi.toMrdi
 import Mrdi.stream
---import Mrdi.ToExpr
+import Mrdi.ToExpr
 import Std
 import Mrdi.server
 import Qq
@@ -165,28 +165,9 @@ private partial def Set.toList {u} {G : Q(Type u)} (S : Q(Set $G)) : MetaM Q(Lis
           let a : Q($G) := a
           return q([$a])
 
-instance : ToExpr (Equiv.Perm (Fin (n + 1))) where
-  toTypeExpr := mkApp (mkConst ``Equiv.Perm) (toTypeExpr (Fin n))
-  toExpr p := Id.run <| do
-    let ⟨cycles, _⟩ := Equiv.Perm.cycleFactors p
-    let mut l : List (List (Fin (n + 1))) := []
-    for cycle in cycles do
-      for i in List.range (n + 1) do
-        if cycle.toFun i ≠ i then
-          let aux : List (Fin (n + 1)) := p.toList i
-          l := aux :: l
-          break
-    have n' : Q(ℕ) := toExpr n
-    have l' : Q(List (List (Fin ($n' + 1)))) := toExpr l
-    return q((List.map List.formPerm $l').prod)
-
-
-def PermsToList (u) (α : Q(Type $u)) (g : Q($α)) (gens : Q(Set $α)) : MetaM $ Q(List $α) := do
+def PermsToList (u) (α : Q(Type $u)) (g : Q($α)) (gens : Q(Set $α)) : MetaM $ Q(List $α) × Q(List $α) := do
   let gens : Q(List $α) ← Set.toList gens
-  return q($g :: $gens)
-
--- def f {β : Type*} [Inhabited β] [Group β] (l : List β) (word : FreeGroup (Fin n)) : β :=
---   (FreeGroup.lift (l[· + 1]!)) word
+  return (q($g :: $gens), q($gens))
 
 def permutation (goal : MVarId) : TacticM Unit := do
   let goal_type ← goal.getType
@@ -196,34 +177,49 @@ def permutation (goal : MVarId) : TacticM Unit := do
   have γ : Q(Type $v) := γ
   have closure_set : Q($γ) := closure_set
   let .sort sort_u ← inferType g_type | throwError "not a sort"
-  --let some α := app1? g_type ``Equiv.Perm | throwError "not an Equiv"
-  --have α : Q(Type) := α
   let some u := sort_u.dec | throwError "not a type{indentExpr (.sort sort_u)}"
   have g_type : Q(Type $u) := g_type
   have g : Q($g_type) := g
   let some (_, inst, gens) :=  closure_set.app3? ``Group.closure | throwError "G is not a Group.closure"
   have _ : Q(Group $g_type) := inst
-  let g_and_perms ← PermsToList u g_type g gens
-  let n : Q(ℕ) := q(List.length $g_and_perms - 1)
-  --let n : Q(ℕ) := q(List.length $g_and_perms)
+  let (g_and_gens, gens) ← PermsToList u g_type g gens
+  let n : Q(ℕ) := q(List.length $gens)
+  let gens_vector : Q(Vector $g_type $n) := q(⟨$gens, rfl⟩)
   let n' ← unsafe evalExpr ℕ q(ℕ) n
   have n : Q(ℕ) := toExpr n'
-  let mrdi : Mrdi ← IO.MrdiFile.Mrdi? g_and_perms
+  let mrdi : Mrdi ← IO.MrdiFile.Mrdi? g_and_gens
   let word_mrdi : Mrdi ← julia "permutation" mrdi
   let word : Q(FreeGroup (Fin $n)) ← IO.MrdiFile.eval_mrdi q(FreeGroup (Fin $n)) word_mrdi
-  --let word_test ← unsafe evalExpr (FreeGroup $ Fin n') q(FreeGroup $ Fin $n) word
-  --logInfo $ format $ word_test.toWord
-  --logInfo $ format $ g_and_perms
-  let _ ← synthInstanceQ q(ToExpr $g_type)
+  let word : Q(Expr) := q(toExpr $word)
+  let word ← unsafe evalExpr Expr q(Expr) word
+  have word : Q(FreeGroup (Fin (List.length $gens))) := word
   let _ ← synthInstanceQ q(Inhabited $g_type)
-  -- TODO why do we need inverse here?
-  let prod := q(toExpr ((FreeGroup.lift ($g_and_perms[· + 1]!)) $word)⁻¹)
-  let prod : Q($g_type) ← unsafe evalExpr Expr q(Expr) prod
+  let prod := q(FreeGroup.lift (fun (x : Fin (List.length $gens)) => Vector.get $gens_vector x) $word)
   have _ : Q(Membership $g_type $γ) := mem_inst
   let targetNew := q($prod ∈ $closure_set)
   let (new_goal, eq_goal) ← replaceTargetEq goal targetNew
-  replaceMainGoal [new_goal, eq_goal]
-  return
+  let eq_goal ← eq_goal.withContext do
+    -- TODO make the code for the tactics cleaner
+    let tacticCode ← `(tactic| congr; ext x; fin_cases x; any_goals rfl)
+    -- TODO what does the `x` do?
+    let (eq_goal, x) ← Elab.runTactic eq_goal tacticCode
+    return eq_goal
+  let new_goal ← new_goal.withContext do
+    let tacticCode ← `(tactic|
+      try apply Group.InClosure.inv; try exact Group.InClosure.one; repeat' {
+        any_goals apply Group.InClosure.mul
+        try any_goals apply Group.InClosure.inv
+        try any_goals solve | exact Group.InClosure.one  |
+        {
+          apply Group.InClosure.basic
+          simp only [Fin.isValue, Set.mem_insert_iff, Set.mem_singleton_iff, true_or, or_true, Equiv.symm_swap]
+        }
+      }
+    )
+    -- TODO what does the `x` do?
+    let (new_goal, x) ← Elab.runTactic new_goal tacticCode
+    return new_goal
+  replaceMainGoal (new_goal ++ eq_goal)
 
 /- Solves goals of type `x ∈ Group.closure {a, b, c}` where x, a, b, c are permutations -/
 syntax "permutation " : tactic
@@ -232,26 +228,30 @@ elab_rules : tactic
     let goal ← getMainGoal
     permutation goal
 
-def a : Equiv.Perm (Fin 5) := c[1, 4]
+
+def d : Equiv.Perm (Fin 5) := c[1, 4]
 def b1 : Equiv.Perm (Fin 5) := c[1, 2]
 def b2 : Equiv.Perm (Fin 5) := c[4, 3]
 def b3 : Equiv.Perm (Fin 5) := c[3, 2]
 def b4 : Equiv.Perm (Fin 5) := c[3, 1]
 
-theorem test2 : a ∈ Group.closure {b1, b2, b3, b4} := by
+theorem test3 [Group α] (v : Vector α n) (i : Fin n) : Vector.get v i ∈ Group.closure {x : α | x ∈ v.val} := by
+
+  sorry
+
+theorem test2 : d ∈ Group.closure {b1, b2, b3, b4} := by
   permutation
+  simp
 
-  · simp [b1, b2, b3, b4, Equiv.swap_comm]
-    repeat any_goals apply Group.InClosure.mul
-    any_goals apply Group.InClosure.basic
-    any_goals simp
-  · congr
-    simp [a, Equiv.swap_comm]
-    ext x
-    fin_cases x
-    any_goals simp [Equiv.swap_apply_of_ne_of_ne]
+  change b4⁻¹ * b2⁻¹ * b4⁻¹ ∈ Group.closure {b1, b2, b3, b4}
 
--- TODO ToExpr FreeGroup
+  repeat
+    apply Group.InClosure.mul
+    try any_goals solve |
+      simp only [Group.InClosure.one, Group.InClosure.inv, Group.InClosure.basic, Fin.isValue,
+        Set.mem_insert_iff, Set.mem_singleton_iff, true_or, or_true, Equiv.symm_swap, test3]
+
+
 
 
 end Permutation

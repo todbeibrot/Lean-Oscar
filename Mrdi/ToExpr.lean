@@ -124,7 +124,7 @@ instance {α : Type u}  [ToExpr α] [DecidableEq α] [ToLevel.{u}] : ToExpr $ Fr
   toTypeExpr := mkApp (mkConst ``FreeGroup) (toTypeExpr α)
   toExpr g :=
     have eα : Q(Type $(toLevel.{u})) := toTypeExpr α
-    have wordE : Q(List ($eα × Bool)) := toExpr g.toWord
+    let wordE : Q(List ($eα × Bool)) := toExpr g.toWord
     q(FreeGroup.mk $wordE)
 
 end FreeGroup
