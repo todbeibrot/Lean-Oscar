@@ -242,6 +242,8 @@ def List.toSet : List α → Set α
 
 theorem List.toSet_mem : a ∈ List.toSet l ↔ a ∈ l := by sorry
 
+theorem Vector.toSet_mem (v : Vector α n) : a ∈ List.toSet (v.toList) ↔ a ∈ v.val := by sorry
+
 
 -- can we start with Vector.toList v instead of l?
 theorem test4 [Group α] (l : List α) (word : FreeGroup (Fin l.length)) :
@@ -266,10 +268,27 @@ theorem test4 [Group α] (l : List α) (word : FreeGroup (Fin l.length)) :
           --apply Group.InClosure.mul
           sorry
 
+theorem test4' [Group α] {n : ℕ} (v : Vector α n) (word : FreeGroup (Fin n)) :
+  let f : FreeGroup (Fin n) →* α := (FreeGroup.lift fun (i : Fin n) => Vector.get v i)
+  f word ∈ Group.closure (List.toSet v.toList) := by
+    have h (x : Fin n) : (FreeGroup.lift fun i => Vector.get v i) (pure x) = v.get x := FreeGroup.lift.of
+    induction word using FreeGroup.induction_on with
+      | C1 => apply Group.InClosure.one
+      | Cp x =>
+          apply Group.InClosure.basic
+          simp [List.toSet_mem, h]
+      | Ci x _ =>
+          simp [h]
+          apply Group.InClosure.inv
+          apply Group.InClosure.basic
+          simp [List.toSet_mem]
+      | Cm x y hx hy =>
+          simp [h] at *
+          apply Group.InClosure.mul hx hy
 
-theorem test2 : d ∈ Group.closure {b1, b2, b3, b4} := by
-  permutation
-  apply test4
+-- theorem test2 : d ∈ Group.closure {b1, b2, b3, b4} := by
+--   permutation
+--   apply test4
   -- simp
 
   -- change b4⁻¹ * b2⁻¹ * b4⁻¹ ∈ Group.closure {b1, b2, b3, b4}
