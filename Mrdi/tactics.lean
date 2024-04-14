@@ -235,21 +235,51 @@ def b2 : Equiv.Perm (Fin 5) := c[4, 3]
 def b3 : Equiv.Perm (Fin 5) := c[3, 2]
 def b4 : Equiv.Perm (Fin 5) := c[3, 1]
 
-theorem test3 [Group α] (v : Vector α n) (i : Fin n) : Vector.get v i ∈ Group.closure {x : α | x ∈ v.val} := by
+def List.toSet : List α → Set α
+ | [] => {}
+ | [a] => {a}
+ | a :: as => Set.insert a (List.toSet as)
 
-  sorry
+theorem List.toSet_mem : a ∈ List.toSet l ↔ a ∈ l := by sorry
+
+
+-- can we start with Vector.toList v instead of l?
+theorem test4 [Group α] (l : List α) (word : FreeGroup (Fin l.length)) :
+  let f := (FreeGroup.lift fun (n : Fin l.length) => Vector.get { val := l, property := rfl } n)
+  f word ∈ Group.closure (List.toSet l) := by
+    induction word using FreeGroup.induction_on with
+      | C1 => apply Group.InClosure.one
+      | Cp x =>
+          apply Group.InClosure.basic
+          rw [List.toSet_mem]
+
+          suffices h : Vector.get { val := l, property := rfl } x ∈ List.toSet l from by
+
+            sorry
+          rw [List.toSet_mem]
+
+          sorry
+      | Ci  x hx =>
+          --apply Group.InClosure.inv
+          sorry
+      | Cm  x y hx hy =>
+          --apply Group.InClosure.mul
+          sorry
+
 
 theorem test2 : d ∈ Group.closure {b1, b2, b3, b4} := by
   permutation
-  simp
+  apply test4
+  -- simp
 
-  change b4⁻¹ * b2⁻¹ * b4⁻¹ ∈ Group.closure {b1, b2, b3, b4}
+  -- change b4⁻¹ * b2⁻¹ * b4⁻¹ ∈ Group.closure {b1, b2, b3, b4}
 
-  repeat
-    apply Group.InClosure.mul
-    try any_goals solve |
-      simp only [Group.InClosure.one, Group.InClosure.inv, Group.InClosure.basic, Fin.isValue,
-        Set.mem_insert_iff, Set.mem_singleton_iff, true_or, or_true, Equiv.symm_swap, test3]
+  -- repeat
+  --   apply Group.InClosure.mul
+  --   try any_goals solve |
+  --     simp only [Group.InClosure.one, Group.InClosure.inv, Group.InClosure.basic, Fin.isValue,
+  --       Set.mem_insert_iff, Set.mem_singleton_iff, true_or, or_true, Equiv.symm_swap]
+
 
 
 
