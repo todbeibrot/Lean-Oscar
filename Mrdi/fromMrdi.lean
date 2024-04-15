@@ -196,7 +196,7 @@ private def construct_word [FinEnum α] : List (ℤ × ℤ) → FreeGroup α
 instance [FinEnum α] [Nonempty α] : FromMrdiData $ FreeGroup α
   where fromMrdiData? data := do
     let l : List ℤ ← fromMrdiData? data
-    return construct_word (← pairs l)
+    return construct_word (← pairs l).reverse
 
 
 section vector

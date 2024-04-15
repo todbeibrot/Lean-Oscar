@@ -297,13 +297,12 @@ private def List.flat {α} : List (α × α) → List α
   | [] => []
   | (a₁, a₂) :: as => a₁ :: a₂ :: flat as
 
--- TODO check if it is ok to have the word a * a * a instead of a³
 instance [FinEnum α] : ToData $ FreeGroup α where
   toData _ g := Id.run <| do
     let word : List (α × Bool) := FreeGroup.toWord g
     -- +1 cause julia starts counting at 1
     let word_Int : List (Int × Int) := word.map (fun (a, b) => ((FinEnum.equiv.toFun a : ℕ) + 1, Bool.isInvToInt b))
-    toData [] (List.flat word_Int)
+    toData [] (List.flat word_Int).reverse
 
 instance [Fintype α] : ToRef $ FreeGroup α where
   toRef _ g := intro none (toMrdiType [] (get_t g)) (toData [] (get_t g)) none none
