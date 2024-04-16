@@ -1,12 +1,11 @@
+import Mrdi.Basic
+import Mrdi.FromMrdi
+import Mrdi.ToMrdi
+import Mrdi.Stream
+import Mrdi.Server
+import Mrdi.Tactics
 import Mathlib
-import Mrdi.mrdi
-import Mrdi.randomstuff
-import Mrdi.fromMrdi
-import Mrdi.toMrdi
-import Mrdi.stream
 import Std
-import Mrdi.server
-import Mrdi.tactics
 
 
 namespace Mrdi
@@ -86,7 +85,6 @@ def b4 : Equiv.Perm (Fin 5) := c[3, 1, 2]
 
 theorem test2 : d ∈ Group.closure {b1, b2, b3, b4} := by
   permutation
-
 
 
 end Mrdi

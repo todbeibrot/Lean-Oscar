@@ -1,17 +1,26 @@
 import Mathlib
-import Mrdi.randomstuff
+import Mrdi.RBNode
 import Mrdi.UUID
+import Mrdi.ToExpr
 
+/- In this File we define `Mrdi`. It represents data in the Mrdi format, which is JSON with a certain JSON schema.
+  It is used for serialization by the julia library Oscar and is designed to save diverse mathematical objects.
+  We use it to send data back and forth between Lean and julia.
+  Each Mrdi object has a type and can have a namespace (ns), data, references (refs) and an id.
+  For more details I would refer to the paper
+  https://arxiv.org/abs/2309.00465#:~:text=We%20describe%20a%20generic%20JSON,used%20in%20a%20different%20context.
 
--- TODO:
--- read the type of a mrdi file and determine the Lean object automatically. Problem: Mrdi File → Lean Object is not injective
--- save and load mrdi files
--- sagredo
--- we copy and duplicate a lot of code from Json. Is it possible to cleanly generalize it?
+  This file consists also of some definions necessary to define `Mrdi` and some basic tools, theorems and instances.
+-/
 
+-- TODO
+-- We copy and duplicate a lot of code from Json. Is it possible to cleanly generalize it?
+-- If Json switches to RBMap, so should Mrdi
 
 open Qq Lean Json
 
+/-- The namespace of an mrdi object. It should contain information about the system in which it was defined.
+   For example: "Oscar", url for Oscar, version -/
 structure Mrdi.Ns : Type where
   json : Json
   deriving Inhabited, ToExpr
@@ -23,12 +32,11 @@ instance : ToJson Ns := ⟨fun ns => ns.json⟩
 instance : FromJson Ns := ⟨fun j => pure ⟨j⟩⟩
 
 -- TODO this should probably be {"_ns": {"Lean", ["some github", "version"]}}
-def oscar_ns : Ns := ⟨mkObj [("Oscar", Json.arr #[Json.str "https://github.com/oscar-system/Oscar.jl", Json.str "0.13.0"])]⟩
+-- else it should be the latest tested oscar version for which everything works
+def oscarNs : Ns := ⟨mkObj [("Oscar", Json.arr #[Json.str "https://github.com/oscar-system/Oscar.jl", Json.str "0.13.0"])]⟩
 
-
-end Mrdi
-
-protected inductive Mrdi.Data
+/-- The data of an mrdi object -/
+protected inductive Data
   | str (s : String)
   | arr (a : Array Mrdi.Data)
   -- following the style of Json:
@@ -40,10 +48,9 @@ protected inductive Mrdi.Data
   | obj (kvPairs : RBNode String fun _ => Mrdi.Data)
   deriving Inhabited, BEq, ToExpr
 
+namespace Data
 
-namespace Mrdi.Data
-
---for debugging
+/-- For debugging -/
 partial def DataToString : Mrdi.Data → String
   | str s => s!"str {s}"
   | arr a => match a.data with
@@ -53,6 +60,7 @@ partial def DataToString : Mrdi.Data → String
 
 instance : ToString Mrdi.Data := ⟨DataToString⟩
 
+/-- the key should only consist of lower letters (a-z) -/
 def isValidKey (s : String) : Bool := s.all Char.isLower
 
 -- temporary ugliness until we can use RBMap for Mrdi.Data objects, see Json
@@ -63,6 +71,7 @@ def mkObj (o : List (String × Mrdi.Data)) : Mrdi.Data :=
       kvPairs := kvPairs.insert compare k v
     kvPairs
 
+-- TODO show termination
 def map (f : String → String) : Mrdi.Data → Mrdi.Data
   | str s => str (f s)
   | arr a => arr $ a.map (map f)
@@ -128,15 +137,16 @@ def setObjVal! : Mrdi.Data → String → Mrdi.Data → Mrdi.Data
                      else panic! s!"The key {k} should consist of only lower letters!"
   | _      , _, _ => panic! "Mrdi.Data.setObjVal!: not an object"
 
-end Mrdi.Data
+end Data
 
-inductive Mrdi.MrdiType
+-- we can't call it `Mrdi.Type` as this might lead to confusion with `Type`
+/-- The type of an mrdi object. It tells us what kind of object it is -/
+inductive MrdiType
   | str (s : String)
-  -- TODO the Json schema allows us to not use a name. But does it make any sense to make it optional?
   | obj (name : Option String) (params : Option Mrdi.Data)
   deriving Inhabited, BEq, ToExpr
 
-namespace Mrdi.MrdiType
+namespace MrdiType
 
 def getStr? : MrdiType → Except String String
  | str s => return s
@@ -175,39 +185,49 @@ instance : FromJson MrdiType where
         return MrdiType.obj name params
     | _ => throw "string or object for MrdiType expected"
 
-end Mrdi.MrdiType
+end MrdiType
 
--- TODO check if the Json schema of the paper is still used in Oscar
+end Mrdi
+
 inductive Mrdi
-  | intro (ns : Option Mrdi.Ns) (type : Mrdi.MrdiType) (data : Option Mrdi.Data)
+  | mk (ns : Option Mrdi.Ns) (type : Mrdi.MrdiType) (data : Option Mrdi.Data)
       (refs : Option (RBNode UUID fun _ => Mrdi)) (id : Option UUID)
   deriving Inhabited, ToExpr
 
 namespace Mrdi
 
+/-- The namespace of an mrdi object. It should contain information about the system in which it was defined.
+   For example: "Oscar", url for Oscar, version -/
 def ns : Mrdi → Option Ns
-  | intro ns _ _ _ _ => ns
+  | mk ns _ _ _ _ => ns
 
+/-- The type of an mrdi object. It tells us what kind of object it is -/
 def type : Mrdi → Mrdi.MrdiType
-  | intro _ t _ _ _ => t
+  | mk _ t _ _ _ => t
 
+/-- The data of an mrdi object -/
 def data : Mrdi → Option Mrdi.Data
-  | intro _ _ d _ _ => d
+  | mk _ _ d _ _ => d
 
+/-- The data of an mrdi object -/
 def data! : Mrdi → Except String Mrdi.Data
-  | intro _ _ none _ _ => throw "no data"
-  | intro _ _ (some d) _ _ => pure d
+  | mk _ _ none     _ _ => throw "no data"
+  | mk _ _ (some d) _ _ => pure d
 
+/-- The references of an mrdi object. They are mrdi objects themself.
+   For example a matrix needs to know the type of its elements. -/
 def refs : Mrdi → Option (RBNode UUID fun _ => Mrdi)
-  | intro _ _ _ r _ => r
+  | mk _ _ _ r _ => r
 
+/-- The reference of an mrdi object belonging to the key -/
 def ref : Mrdi → UUID → Option Mrdi
-  | intro _ _ _ none _, _ => none
-  | intro _ _ _ (some RBNode.leaf) _, _ => none
-  | intro _ _ _ (some r) _, uuid => Lean.RBNode.find compare r uuid
+  | mk _ _ _ none               _, _    => none
+  | mk _ _ _ (some RBNode.leaf) _, _    => none
+  | mk _ _ _ (some r)           _, uuid => Lean.RBNode.find compare r uuid
 
+/-- The id of an mrdi object. Other mrdi objects can refer to this object using the id. -/
 protected def id : Mrdi → Option UUID
-  | intro _ _ _ _ uuid => uuid
+  | mk _ _ _ _ uuid => uuid
 
 def hasNs (mrdi : Mrdi) : Bool := Option.isSome $ mrdi.ns
 
@@ -218,7 +238,7 @@ def hasRefs (mrdi : Mrdi) : Bool := Option.isSome $ mrdi.refs
 def hasId (mrdi : Mrdi) : Bool := Option.isSome $ mrdi.id
 
 def setId (id : UUID) : Mrdi → Mrdi
-  | intro ns type data refs _ => intro ns type data refs id
+  | mk ns type data refs _ => mk ns type data refs id
 
 def mkRefs (o : List (UUID × Mrdi)) : RBNode UUID fun _ => Mrdi := Id.run do
   let mut kvPairs := RBNode.leaf
@@ -238,12 +258,12 @@ def TypeToData : MrdiType → Mrdi.Data
         fields := ("params", params) :: fields
       Mrdi.Data.mkObj fields
 
--- checks if all components except `ns` and `id` are equal
+/-- Checks if all components except `ns` and `id` are equal -/
 private partial def beq' : Mrdi → Mrdi → Bool
-  | intro _ type₁ data₁ none         _, intro _ type₂ data₂ none         _ => type₁ == type₂ && data₁ == data₂
-  | intro _ _     _     none         _, intro _ _     _     _            _ => false
-  | intro _ _     _     _            _, intro _ _     _     none         _ => false
-  | intro _ type₁ data₁ (some refs₁) _, intro _ type₂ data₂ (some refs₂) _ =>
+  | mk _ type₁ data₁ none         _, mk _ type₂ data₂ none         _ => type₁ == type₂ && data₁ == data₂
+  | mk _ _     _     none         _, mk _ _     _     _            _ => false
+  | mk _ _     _     _            _, mk _ _     _     none         _ => false
+  | mk _ type₁ data₁ (some refs₁) _, mk _ type₂ data₂ (some refs₂) _ =>
       let _ : BEq Mrdi := ⟨beq'⟩
       let szR₁ := refs₁.fold (init := 0) (fun a _ _ => a + 1)
       let szR₂ := refs₂.fold (init := 0) (fun a _ _ => a + 1)
@@ -266,8 +286,8 @@ private partial def fromJson?' (j : Json) : Except String Mrdi := do
   match (getObj? (j.getObjValD "_refs")) with
   | .ok json_refs => do
       let refs ← (RBNode.mapM' UUID.parse (fun _ => (fromJson? : Json → Except String Mrdi))) json_refs
-      return Mrdi.intro ns type data refs id
-  | .error _ => return Mrdi.intro ns type data none id
+      return Mrdi.mk ns type data refs id
+  | .error _ => return Mrdi.mk ns type data none id
 
 instance : FromJson Mrdi := ⟨fromJson?'⟩
 

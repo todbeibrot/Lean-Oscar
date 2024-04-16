@@ -2,10 +2,11 @@ import Lean.Data.Json
 import Lean.Expr
 import Mathlib.Tactic.ToExpr
 
-/- This file contains all kind of stuff which I need for the project.
-   TODO check what should be added to Mathlib -/
+/- This file contains additional definitions and instances for `RBNode` which I need for the project. -/
 
-section ToExprJson
+-- TODO check what should be added to Mathlib
+
+section ToExprRBNode
 
 open Lean Json
 
@@ -25,11 +26,7 @@ instance {α : Type u} {β : Type v} [ToExpr α] [ToExpr β] [ToLevel.{u}] [ToLe
   toTypeExpr := mkApp2 (mkConst ``RBNode [ToLevel.toLevel.{u}, ToLevel.toLevel.{v}])
     (toTypeExpr α) (.lam default (toTypeExpr α) (toTypeExpr β) .default)
 
-deriving instance ToExpr for JsonNumber
-deriving instance ToExpr for Json
-
-end ToExprJson
-
+end ToExprRBNode
 
 
 section BEqRBNode
@@ -50,7 +47,6 @@ instance {α : Type u} {β : Type v} [BEq β] [Ord α] : BEq (RBNode α (fun _ =
 end BEqRBNode
 
 
-
 section ToJsonRBNode
 
 open Lean Json
@@ -67,10 +63,9 @@ instance {α : Type u} {β : Type v} [ToString α] [ToJson β] : ToJson (RBNode 
 end ToJsonRBNode
 
 
-
 namespace Lean.RBNode
 
--- a map function which can change keys and values
+/-- a map function which can change keys and values -/
 def map' {α : Type u} {δ : Type w} {β : α → Type v} {γ : δ → Type w}
   (g : α → δ) (f : (a : α) → β a → γ (g a))
   : RBNode α β → RBNode δ γ
@@ -79,7 +74,7 @@ def map' {α : Type u} {δ : Type w} {β : α → Type v} {γ : δ → Type w}
 
 -- TODO: this version does what I need. Is it possible to let `γ` depend on `g a`?
 --       Can we use two different Monads? And it should be possible to have some stuff have `Type w`
--- a monadic map function which can change keys and values
+/-- a monadic map function which can change keys and values -/
 def mapM' {M : Type v → Type v} [Applicative M] {α : Type u} {δ : Type v} {β : α → Type v} {γ : Type v}
   (g : α → M δ) (f : (a : α) → β a → M γ)
   : RBNode α β → M (RBNode δ (fun _ => γ))

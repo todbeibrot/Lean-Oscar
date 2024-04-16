@@ -1,5 +1,5 @@
 import Mathlib
-import Mrdi.mrdi
+import Mrdi.Basic
 
 namespace Mrdi
 
@@ -8,7 +8,7 @@ open Lean Json
 -- TODO so far we use the data to get what we expect without caring if the ocject we get is of the expected type.
 -- shouldnt change anything but we could give better error messages
 
--- In julia we start counting at 1 not 0. So some stuff has to be shifted
+-- In julia we start counting at 1 not 0. So some data has to be shifted
 def MinusOneShift : Mrdi.Data → Mrdi.Data := Mrdi.Data.map
   fun s => match String.toNat? s with
     | some n => toString (n - 1)
@@ -23,7 +23,7 @@ instance : FromMrdiData ℕ where
   fromMrdiData? data := do
     let s ← Mrdi.Data.getStr? data
     let some n := String.toNat? s
-      | throw s!"expected a string-encoded number, got '{s}'"
+      | throw s!"expected a string-encoded natural number, got '{s}'"
     return n
 
 instance : FromMrdiData ℤ where
@@ -59,9 +59,9 @@ instance : FromMrdiData ℚ where
       return (z : ℚ)
     else if l.length == 2 then do
       let some z₀ := String.toInt? l[0]!
-        | throw s!"expected a string-encoded integer, got '{s}'"
+        | throw s!"expected a string-encoded integer, got '{l[0]!}'"
       let some z₁ := String.toInt? l[1]!
-        | throw s!"expected a string-encoded integer, got '{s}'"
+        | throw s!"expected a string-encoded integer, got '{l[1]!}'"
       return z₀ / z₁
     else
       throw s!"expected a string-encoded rational, got '{s}'"
@@ -80,11 +80,11 @@ instance [FromMrdiData α] : FromMrdiData (List α) where
 noncomputable instance [Semiring R] [FromMrdiData R] : FromMrdiData (Polynomial R) where
   fromMrdiData? data := do
     let mut p : List $ Polynomial R := []
-    let a ← data.getArr?
-    for mono in a do
-      let a2 ← mono.getArr?
-      let n : Nat ← fromMrdiData? a2[0]!
-      let c : R ← fromMrdiData? a2[1]!
+    let monomials ← data.getArr?
+    for mono in monomials do
+      let a ← mono.getArr?
+      let n : Nat ← fromMrdiData? a[0]!
+      let c : R ← fromMrdiData? a[1]!
       p := Polynomial.monomial n c :: p
     return List.sum p
 
@@ -97,6 +97,7 @@ noncomputable instance [Semiring R] [FromMrdiData R] : FromMrdiData (Polynomial 
 
 -- TODO clean up
 -- TODO use FinEnum instead of Fin
+-- TODO this instance is still untested
 instance : FromMrdiData (Subgroup (Equiv.Perm (Fin (n + 1)))) where
   fromMrdiData? data := do
     -- TODO check n == degree
@@ -121,9 +122,6 @@ instance : FromMrdiData (Subgroup (Equiv.Perm (Fin (n + 1)))) where
     let gs'' : Set (Equiv.Perm (Fin (n + 1))) := gs'''.toFinset
     return Subgroup.closure gs''
 
-
-
-
 /-
 {
     "_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","1.0.0-DEV-fbd34b88fbedbbcb729a1e2ea5037b1860cda204"]},
@@ -142,14 +140,9 @@ instance : FromMrdiData (Subgroup (Equiv.Perm (Fin (n + 1)))) where
 --   left_inv := sorry
 --   right_inv := sorry
 
--- TODO this probably already exists in Mathlib
-def ofOptionD (a : α) : Option α → α
-  | some b => b
-  | none   => a
-
 def PermOfList  (l : List (Fin (n + 1))) : Equiv.Perm (Fin (n + 1)) where
-  toFun a := ofOptionD a l[a]?
-  invFun a := ofOptionD a (List.indexOf? a l)
+  toFun a := l[a]?.getD a
+  invFun a := (List.indexOf? a l).getD a
   left_inv := sorry
   right_inv := sorry
 
@@ -157,8 +150,6 @@ instance : FromMrdiData (Equiv.Perm (Fin (n + 1))) where
   fromMrdiData? data := do
     let l : List (Fin (n + 1)) ← fromMrdiData? (MinusOneShift data)
     return PermOfList l
-
-
 
 
 /- {
@@ -182,9 +173,9 @@ private def pairs  : List ℤ → Except String (List (ℤ × ℤ))
   | a₁ :: a₂ :: as => return (a₁, a₂) :: (← pairs as)
   | _ => throw "List has odd number of elements"
 
-private def construct_word [FinEnum α] : List (ℤ × ℤ) → FreeGroup α
+private def constructWord [FinEnum α] : List (ℤ × ℤ) → FreeGroup α
   | [] => 1
-  | (a, e) :: as => (FreeGroup.of $ FinEnum.equiv.invFun (Fin.ofNat' (Int.toNat (a - 1)) sorry)) ^ e * construct_word  as
+  | (a, e) :: as => (FreeGroup.of $ FinEnum.equiv.invFun (Fin.ofNat' (Int.toNat (a - 1)) sorry)) ^ e * constructWord  as
 
 -- TODO Nonempty α should be enough to fill the sorry
 -- TODO the number i in the data stands for the i-th element of the free group.
@@ -196,7 +187,7 @@ private def construct_word [FinEnum α] : List (ℤ × ℤ) → FreeGroup α
 instance [FinEnum α] [Nonempty α] : FromMrdiData $ FreeGroup α
   where fromMrdiData? data := do
     let l : List ℤ ← fromMrdiData? data
-    return construct_word (← pairs l).reverse
+    return constructWord (← pairs l).reverse
 
 
 section vector
@@ -210,8 +201,9 @@ section vector
 instance [FromMrdiData α] : FromMrdiData $ Vector α n where
   fromMrdiData? data := do
     let l : List α ← fromMrdiData? data
-    have h : l.length = n := sorry
-    return ⟨l, h⟩
+    if h : l.length = n then
+      return ⟨l, h⟩
+    else throw s!"data list doesn't have length {n}"
 
 end vector
 
@@ -224,7 +216,6 @@ section matrix
     "data":[["1","2"],["3","4"]]
 } -/
 
--- TODO check if I didnt mix up rows and colums
 instance [FromMrdiData α] : FromMrdiData $ Matrix (Fin m) (Fin n) α where
   fromMrdiData? data := do
     let v : Vector (Vector α n) m ← fromMrdiData? data

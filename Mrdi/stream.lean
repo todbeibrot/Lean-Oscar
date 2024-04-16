@@ -1,6 +1,6 @@
-import Mrdi.mrdi
-import Mrdi.toMrdi
-import Mrdi.fromMrdi
+import Mrdi.Basic
+import Mrdi.ToMrdi
+import Mrdi.FromMrdi
 import Init.System.IO
 
 namespace IO.FS.Stream
@@ -24,8 +24,7 @@ end IO.FS.Stream
 
 namespace IO.MrdiFile
 
-open IO FS System Lean Lean.Elab Command Term Lean.Elab.Tactic
-open Qq Tactic Meta Elab Parser PrettyPrinter Json Mrdi Command
+open FS System Lean Elab Command Term Qq Meta Mrdi
 
 def getMrdiFilePath (s : String) : IO FilePath := do
   let current_dir ← currentDir
@@ -33,23 +32,35 @@ def getMrdiFilePath (s : String) : IO FilePath := do
   let file := mrdi_files_dir.join ⟨s ++ ".mrdi"⟩
   return file
 
+/-- Returns the value  as a Mrdi object. -/
 def Mrdi? (val : Expr) : MetaM Mrdi := do
   let α : Q(Type) ← inferType val
   let val : Q($α) := val
   let _ ← synthInstanceQ q(ToMrdi $α)
-  let uuids ← UUID.IO.randUUIDs 5   -- TODO how do we know how many uuids we actually need?
+  -- TODO how do we know how many uuids we actually need?
+  let uuids ← UUID.IO.randUUIDs 5
   let uuidsE : Q(List UUID) := toExpr uuids
   let mrdi := q(ToMrdi.toMrdi $uuidsE $val)
   unsafe evalExpr Mrdi q(Mrdi) mrdi
 
-def eval_mrdi {u} (α : Q(Type u)) (mrdi : Mrdi) : MetaM Q($α) := do
+/-- Returns `mrdi` as an expression of type `α`
+    If the instance `ToExpr α` exists, the result will be evaluated, making it much more pleasant to work with. -/
+def evalMrdi {u} (α : Q(Type u)) (mrdi : Mrdi) : MetaM Q($α) := do
   let mrdiE : Q(Mrdi) := toExpr mrdi
   let _ ← synthInstanceQ q(FromMrdi $α)
   let _ ← synthInstanceQ q(Inhabited $α)
   let val : Q($α) := q(fromMrdiD $mrdiE)
-  instantiateMVars val
+  let val : Q($α) ← instantiateMVars val
+  try
+    let _ ← synthInstanceQ q(ToExpr $α)
+    let val := q(toExpr $val)
+    let val : Q($α) ← unsafe evalExpr Expr q(Expr) val
+    return val
+  catch _ =>
+    return val
 
-def eval_mrdi' (α) [FromMrdi α] (mrdi : Mrdi) : MetaM α := do
+/-- Returns `mrdi` as an value of type `α` -/
+def evalMrdi' (α) [FromMrdi α] (mrdi : Mrdi) : MetaM α := do
   return ← ofExcept (fromMrdi? mrdi)
 
 def writeMrdi (fname : FilePath) (mrdi : Mrdi) : IO Unit :=
@@ -63,19 +74,19 @@ elab "#writeMrdi " val:term "to " file:term : command =>
     let valE : Expr ← elabTerm val none
     let mrdi : Mrdi ← Mrdi? valE
     let fileE : Q(String) ← elabTerm file q(String)
-    let s ← unsafe evalExpr String q(String) fileE
-    let path ← getMrdiFilePath s
+    let file ← unsafe evalExpr String q(String) fileE
+    let path ← getMrdiFilePath file
     writeMrdi path mrdi
 
-def load_mrdi_from_file (α : Q(Type)) (file : Q(String)) (trace : Bool := True) : MetaM Q($α) := do
-  let s ← unsafe evalExpr String q(String) file
-  let path ← getMrdiFilePath s
+def loadMrdiFromFile (α : Q(Type)) (fileE : Q(String)) (trace : Bool := True) : MetaM Q($α) := do
+  let file ← unsafe evalExpr String q(String) fileE
+  let path ← getMrdiFilePath file
   let mrdi ← readMrdi path
-  let valED ← eval_mrdi α mrdi
+  let valE ← evalMrdi α mrdi
   if trace then
     logInfo (format mrdi)
     logInfo (format mrdi.data)
-    let valE3 : Q($α) ← reduce valED
+    let valE3 : Q($α) ← reduce valE
     try
       let _ ← synthInstanceQ q(Repr $α)
       let messageE : Q(Format) := q(repr $valE3)
@@ -85,13 +96,13 @@ def load_mrdi_from_file (α : Q(Type)) (file : Q(String)) (trace : Bool := True)
       let message ← PrettyPrinter.ppExpr valE3
       logInfo "If you want a nice message, implement Repr"
       logInfo message
-  return valED
+  return valE
 
 elab "#readMrdi " type:term "from " file:term : command => do
   liftTermElabM do
     let α : Q(Type) ← elabTerm type q(Type)
     let fileE : Q(String) ← elabTerm file q(String)
-    let _ ← load_mrdi_from_file α fileE
+    let _ ← loadMrdiFromFile α fileE
     return
 
 end IO.MrdiFile

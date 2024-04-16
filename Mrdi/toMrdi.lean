@@ -1,5 +1,5 @@
 import Mathlib
-import Mrdi.mrdi
+import Mrdi.Basic
 import Mrdi.UUID
 
 namespace Mrdi
@@ -12,14 +12,14 @@ section Basic
 -- make a template wich can be used for copy and paste.
 -- so I don't need to remember everything that has to be implemented
 
--- In julia we start counting at 1 not 0. So some stuff has to be shifted
+/-- In julia we start counting at 1 not 0. So some data has to be shifted -/
 private def PlusOneShift : Mrdi.Data → Mrdi.Data := Mrdi.Data.map
   fun s => match String.toNat? s with
     | some n => toString (n + 1)
     | none => s
 
 
--- `TypeWrapper` is wrapper for types to signal that we want the type `α` itself and not something of type `α`
+/-- `TypeWrapper` is wrapper for types to signal that we want the type `α` itself and not something of type `α` -/
 -- TODO better names
 inductive TypeWrapper
   | dummy
@@ -29,7 +29,7 @@ inductive TypeWrapper
 -- TODO delete?
 def Unwrap : TypeWrapper α → Type u := fun _ => α
 
--- encapsule data of type `α`
+/-- Encapsules data of type `α` -/
 class ToData where
   toData : List UUID → α → Mrdi.Data
 
@@ -41,13 +41,12 @@ export ToData (toData)
 instance [ToString α] : Mrdi.ToData α where
   toData _ a := Data.str (toString a)
 
--- encapsule the type in Julia of elements of type α
+/-- Encapsules the type in Julia of elements of type `α` -/
 class ToMrdiType where
   toMrdiType : List UUID → α → MrdiType
 
 export ToMrdiType (toMrdiType)
 
--- TODO do we need α in toRef??
 class ToRef where
   toRef : List UUID → α → Mrdi
 
@@ -67,7 +66,7 @@ class ToMrdi where
 export ToMrdi (toMrdi)
 
 instance [Mrdi.ToData α] [ToMrdiType α] [ToRefs α] : ToMrdi α where
-  toMrdi uuids a := ⟨oscar_ns, toMrdiType uuids a, toData uuids a, toRefs uuids a, none⟩
+  toMrdi uuids a := ⟨oscarNs, toMrdiType uuids a, toData uuids a, toRefs uuids a, none⟩
 
 -- uuids[0] will be the id for this object
 instance [ToRef α] [Inhabited α] : ToMrdi $ TypeWrapper α where
@@ -226,7 +225,7 @@ instance : ToData $ TypeWrapper $ Equiv.Perm (Fin n) where
       Data.arr #[Data.str "2", Data.str "1"]])]
 
 instance : ToRef $ Equiv.Perm (Fin n) where
-  toRef _ p := intro none (toMrdiType [] (get_t p)) (toData [] (get_t p)) none none
+  toRef _ p := mk none (toMrdiType [] (get_t p)) (toData [] (get_t p)) none none
 
 /- {
     "_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","1.0.0-DEV-fbd34b88fbedbbcb729a1e2ea5037b1860cda204"]},
@@ -305,7 +304,7 @@ instance [FinEnum α] : ToData $ FreeGroup α where
     toData [] (List.flat word_Int).reverse
 
 instance [Fintype α] : ToRef $ FreeGroup α where
-  toRef _ g := intro none (toMrdiType [] (get_t g)) (toData [] (get_t g)) none none
+  toRef _ g := mk none (toMrdiType [] (get_t g)) (toData [] (get_t g)) none none
 
 instance [Fintype α] : ToRefs $ FreeGroup α where
   toRefs uuids g := mkRefs [(uuids[0]!, toRef uuids g)]
