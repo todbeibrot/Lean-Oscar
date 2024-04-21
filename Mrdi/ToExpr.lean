@@ -1,7 +1,10 @@
 import Mathlib
 import Mrdi.RBNode
 
-/- This file contains diverse `ToExpr` instances -/
+/-
+This file contains diverse `ToExpr` instances.
+Note that the resulting expressions are not necessarily definitionally equal to their origin.
+-/
 
 open Qq
 open Lean hiding Rat mkRat

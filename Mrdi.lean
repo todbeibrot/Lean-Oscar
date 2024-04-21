@@ -58,6 +58,13 @@ def B : Matrix (Fin 3) (Fin 3) ℚ := by load_file "Matrix"
 
 def A : Matrix (Fin 3) (Fin 3) ℚ := !![3, 0, 4; 5, 10, 6; 1, 2, 3]
 def A_inv : Matrix (Fin 3) (Fin 3) ℚ := by matrix_inverse A
+theorem test3 : A * A_inv = 1 := by
+  simp[A, A_inv]
+  ext i j
+  fin_cases i; fin_cases j
+  norm_num
+  try repeat sorry
+
 #eval A_inv
 #print A_inv
 #eval A * A_inv
