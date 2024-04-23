@@ -2,6 +2,7 @@ import Mrdi
 import Mathlib
 import Std
 
+/- Only notes. Nothing serious implemented yet. -/
 
 open Mrdi Lean Lean.Elab Command Term Lean.Elab.Tactic Tactic
 
@@ -53,8 +54,12 @@ for coset tables
 3. theorem : coset.card * order of subgroup = order of group
 -/
 
+--TODO that's not correct. think again
 /- coset table = a List of elements + a proof that the List generates G + a proof that the List is mul closed
                  + a proof that all elements are different -/
+
+/- proof that the List generates G is trivial cause it contains the generators -/
+
 
 /- order of cyclic subgroup by showing a^n = 1 and a^k ≠ 1 for k < n? -/
 
