@@ -1,7 +1,5 @@
 import Mathlib
 import Mrdi.Basic
-import Mrdi.FromMrdi
-import Mrdi.ToMrdi
 import Mrdi.Stream
 import Std
 

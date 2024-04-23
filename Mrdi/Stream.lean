@@ -41,7 +41,7 @@ def Mrdi? (val : Expr) : MetaM Mrdi := do
   let uuids ← UUID.IO.randUUIDs 5
   let uuidsE : Q(List UUID) := toExpr uuids
   let mrdi := q(ToMrdi.toMrdi $uuidsE $val)
-  unsafe evalExpr Mrdi q(Mrdi) mrdi
+  unsafe evalExpr (Mrdi) q(Mrdi) mrdi
 
 /-- Returns `mrdi` as an expression of type `α`
     If the instance `ToExpr α` exists, the result will be evaluated, making it much more pleasant to work with. -/
