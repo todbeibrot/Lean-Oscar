@@ -207,13 +207,11 @@ def permutation (goal : MVarId) : TacticM Unit := do
   let eq_goal ← eq_goal.withContext do
     -- TODO make the code for the tactics cleaner
     let tacticCode ← `(tactic| congr; ext x; fin_cases x; any_goals rfl)
-    -- TODO what does the `x` do?
-    let (eq_goal, x) ← Elab.runTactic eq_goal tacticCode
+    let (eq_goal, _) ← Elab.runTactic eq_goal tacticCode
     return eq_goal
   let new_goal ← new_goal.withContext do
     let tacticCode ← `(tactic| apply FreeGroup_lift_word_mem_GroupClosure)
-    -- TODO what does the `x` do?
-    let (new_goal, x) ← Elab.runTactic new_goal tacticCode
+    let (new_goal, _) ← Elab.runTactic new_goal tacticCode
     return new_goal
   replaceMainGoal (new_goal ++ eq_goal)
 
