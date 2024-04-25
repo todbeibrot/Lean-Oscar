@@ -13,8 +13,12 @@ g_word = preimage(epi, perm)
 matrix = [QQ(1) QQ(2); QQ(3) QQ(4)]
 vector = Vector([1, 2, 3])
 matrix_inv = inv(matrix)
+F = free_group(2)
+(f1, f2) = gens(F)
+quot = quo(F, [f1^2, f2^2, comm(f1, f2)])[1]
+rels = relators(quot)
 
-file = "matrix_inv"
-save("mrdi-files/$file.mrdi", matrix_inv)
+file = "fp_group_rels"
+save("mrdi-files/$file.mrdi", rels)
 x = load("mrdi-files/$file.mrdi")
 println(x)
