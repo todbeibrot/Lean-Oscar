@@ -3,6 +3,7 @@ import Mrdi.Basic
 import Mrdi.Stream
 import Mrdi.ToExpr
 import Mrdi.Server
+import Mrdi.ToMrdiNoncomputable
 import Std
 import Qq
 import Mathlib.Tactic.ToExpr
@@ -21,7 +22,6 @@ elab_rules : tactic
       let α ← goal.getType
       let a ← IO.MrdiFile.loadMrdiFromFile α fileE (trace := False)
       goal.assign a
-
 
 
 section Matrix_inverse
@@ -118,7 +118,7 @@ theorem FreeGroup_lift_word_mem_GroupClosure [Group α] {n : ℕ} (v : Vector α
           simp [h] at *
           apply Group.InClosure.mul hx hy
 
--- TODO how can I use `Lean.Meta.replaceTargetEq` and get `eqProof` as a new goal without writing a new tactic for it?
+-- TODO how can I use `Lean.Meta.replaceTargetEq` and get `eqProof` as a new goal without writing a new definition for it?
 /--
   Convert the given goal `Ctx |- target` into `Ctx |- targetNew` and an equality proof `eqProof : target = targetNew`.
 -/
@@ -134,41 +134,6 @@ def replaceTargetEq (mvarId : MVarId) (targetNew : Expr) : MetaM (MVarId × MVar
     let val  := mkAppN (Lean.mkConst `Eq.mpr [u]) #[target, targetNew, mvarEq, mvarNew]
     mvarId.assign val
     return (mvarNew.mvarId!, mvarEq.mvarId!)
-
--- like `Lean.Expr.app4?`
-@[inline] def app5? (e : Expr) (fName : Name) : Option (Expr × Expr × Expr × Expr × Expr) :=
-  if e.isAppOfArity fName 5 then
-    some (e.appFn!.appFn!.appFn!.appFn!.appArg!, e.appFn!.appFn!.appFn!.appArg!, e.appFn!.appFn!.appArg!, e.appFn!.appArg!, e.appArg!)
-  else
-    none
-
-/--
-This works only if the set is defined by `Set.singleton` and `Set.insert`.
-This is the case for sets defined by the syntax `{a, b, c}`.
--/
-private partial def Set.toList {u} {G : Q(Type u)} (S : Q(Set $G)) : MetaM Q(List $G) := do
-  match S with
-    | ~q(Set.singleton $a) =>
-        return q([$a])
-    | ~q(Set.insert $a $s) => do
-        let as : Q(List $G) ← toList q($s)
-        return q(($a) :: $as)
-    | ~q(Insert.insert $a $s) => do
-        let as : Q(List $G) ← toList q($s)
-        return q(($a) :: $as)
-    | ~q(Singleton.singleton $a) =>
-        return q([$a])
-    | e => do
-        try
-          let some (_, _, _, a, s) := app5? e ``Insert.insert | throwError "not an insert"
-          let a : Q($G) := a
-          let s : Q(Set $G) := s
-          let as : Q(List $G) ← toList q($s)
-          return q($a :: $as)
-        catch _ => do
-          let some (_, _, _, a) := app4? e ``Singleton.singleton | throwError s!"not a singleton: {e}"
-          let a : Q($G) := a
-          return q([$a])
 
 def PermsToList (u) (α : Q(Type $u)) (g : Q($α)) (gens : Q(Set $α)) : MetaM $ Q(List $α) × Q(List $α) := do
   let gens : Q(List $α) ← Set.toList gens
@@ -205,7 +170,6 @@ def permutation (goal : MVarId) : TacticM Unit := do
   let targetNew := q($prod ∈ $closure_set)
   let (new_goal, eq_goal) ← replaceTargetEq goal targetNew
   let eq_goal ← eq_goal.withContext do
-    -- TODO make the code for the tactics cleaner
     let tacticCode ← `(tactic| congr; ext x; fin_cases x; any_goals rfl)
     let (eq_goal, _) ← Elab.runTactic eq_goal tacticCode
     return eq_goal

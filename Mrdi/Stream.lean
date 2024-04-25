@@ -33,12 +33,14 @@ def getMrdiFilePath (s : String) : IO FilePath := do
   return file
 
 /-- Returns the value  as a Mrdi object. -/
-def Mrdi? (val : Expr) : MetaM Mrdi := do
+def Mrdi? (val : Expr) (uuids : List UUID := []) : MetaM Mrdi := do
   let α : Q(Type) ← inferType val
   let val : Q($α) := val
   let _ ← synthInstanceQ q(ToMrdi $α)
   -- TODO how do we know how many uuids we actually need?
-  let uuids ← UUID.IO.randUUIDs 5
+  let mut uuids : List UUID := uuids
+  if uuids == [] then
+    uuids ← UUID.IO.randUUIDs 5
   let uuidsE : Q(List UUID) := toExpr uuids
   let mrdi := q(ToMrdi.toMrdi $uuidsE $val)
   let meta_mrdi ← unsafe evalExpr (MetaM Mrdi) q(MetaM Mrdi) mrdi
