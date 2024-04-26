@@ -1,6 +1,7 @@
 import Mathlib
 import Mrdi.Basic
 import Mrdi.UUID
+import Mrdi.ListToSet
 import Qq
 
 namespace Mrdi
@@ -257,7 +258,7 @@ instance : ToMrdiType $ Equiv.Perm (Fin n) where
   toMrdiType uuids _ := return MrdiType.obj "PermGroupElem" (Data.str $ toString uuids[0]!)
 
 instance : ToRefs $ Equiv.Perm (Fin (n + 1)) where
-  toRefs uuids p := return mkRefs [(uuids[0]!, ← toRef uuids p)]
+  toRefs uuids p := return mkRefs [(uuids[1]!, ← toRef uuids p)]
 
 end Permutation
 
@@ -288,7 +289,7 @@ instance [Fintype α] : ToData $ TypeWrapper $ FreeGroup α where
 
 -- the first uuid should be a reference to the free group
 instance : ToMrdiType $ FreeGroup α where
-  toMrdiType uuids _ := return MrdiType.obj "FPGroupElem" (Mrdi.Data.str (toString uuids[0]!))
+  toMrdiType uuids _ := return MrdiType.obj "FPGroupElem" (Mrdi.Data.str (toString uuids[1]!))
 
 -- convert a Bool to a Int, false -> -1, true -> 1
 private def Bool.isInvToInt : Bool → Int
@@ -303,17 +304,43 @@ private def List.flat {α} : List (α × α) → List α
 instance [FinEnum α] : ToData $ FreeGroup α where
   toData _ g := Id.run <| do
     let word : List (α × Bool) := FreeGroup.toWord g
-    -- +1 cause julia starts counting at 1
+    -- +1 cause GAP starts counting at 1
     let word_Int : List (Int × Int) := word.map (fun (a, b) => ((FinEnum.equiv.toFun a : ℕ) + 1, Bool.isInvToInt b))
-    toData [] (List.flat word_Int).reverse
+    toData [] (List.flat word_Int)
 
 instance [Fintype α] : ToRef $ FreeGroup α where
   toRef _ g := return mk none (← toMrdiType [] (get_t g)) (← toData [] (get_t g)) none none
 
 instance [Fintype α] : ToRefs $ FreeGroup α where
-  toRefs uuids g := return mkRefs [(uuids[0]!, ← toRef uuids g)]
+  toRefs uuids g := return mkRefs [(uuids[1]!, ← toRef uuids g)]
 
 end FreeGroup
+
+section PresentedGroup
+
+/- Presented Group uses a Set of relations, which is noncomputable. -/
+
+instance : ToMrdiType $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
+  toMrdiType _ _ := return MrdiType.str "FPGroup"
+
+/-- uuids[0] should be the uuid for the free group -/
+instance [FinEnum α] : ToData $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
+  toData uuids _ := do
+    let x := Data.mkObj
+      [("GapType", Data.str "IsSubgroupFpGroup"), ("freeGroup", Data.str (toString uuids[1]!)), ("relators", ← toData uuids rels)]
+    return Data.mkObj [("X", x)]
+
+instance [Fintype α] : ToRefs $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
+  toRefs uuids _ := return mkRefs [(uuids[1]!, ← toRef uuids (default : FreeGroup α))]
+
+/- TODO delete this instance. it's for debugging -/
+instance [FinEnum α] : ToMrdi $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
+  toMrdi uuids g := toMrdi (α := TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels)) uuids (get_t g)
+
+instance [FinEnum α] {rels : List (FreeGroup α)} : ToMrdi $ PresentedGroup (List.toSet rels) where
+  toMrdi uuids g := toMrdi (α := FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels)) uuids g
+
+end PresentedGroup
 
 section Matrix
 

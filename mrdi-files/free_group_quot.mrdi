@@ -1,1 +1,21 @@
-{"_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","1.0.0-DEV-fbd34b88fbedbbcb729a1e2ea5037b1860cda204"]},"_type":"FPGroup","data":{"X":{"GapType":"IsSubgroupFpGroup","freeGroup":"d9983e6c-e4c3-45cc-8b3a-9157ff437aa4","relators":[["1","2"],["2","2"],["1","-1","2","-1","1","1","2","1"]]}},"id":"df66da69-aa64-4b3f-a24d-0af2abdb435e","_refs":{"d9983e6c-e4c3-45cc-8b3a-9157ff437aa4":{"_type":"GAP.GapObj","data":{"GapType":"IsFreeGroup","wfilt":"IsLetterWordsFamily","names":["f1","f2"]}}}}
+{
+    "_ns":{
+        "Oscar":["https://github.com/oscar-system/Oscar.jl",
+        "1.0.0-DEV-fbd34b88fbedbbcb729a1e2ea5037b1860cda204"]
+        },
+    "_type":"FPGroup",
+    "data":{
+        "X":{
+            "GapType":"IsSubgroupFpGroup",
+            "freeGroup":"d9983e6c-e4c3-45cc-8b3a-9157ff437aa4",
+            "relators":[["1","2"],["2","2"],["1","-1","2","-1","1","1","2","1"]]
+            }
+        },
+    "id":"df66da69-aa64-4b3f-a24d-0af2abdb435e",
+    "_refs":{
+        "d9983e6c-e4c3-45cc-8b3a-9157ff437aa4":{
+            "_type":"GAP.GapObj",
+            "data":{
+                "GapType":"IsFreeGroup",
+                "wfilt":"IsLetterWordsFamily",
+                "names":["f1","f2"]}}}}
