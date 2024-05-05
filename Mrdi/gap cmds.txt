@@ -1,0 +1,61 @@
+f := FreeGroup("a","b");; 
+AssignGeneratorVariables(f);;
+g := f / [Comm(a,b)/a,Comm(b,a)/b];;
+LoadPackage("kbmag");;
+
+
+s := KBMAGRewritingSystem(g);;
+KBRWS := function ( rws )
+    local O, callstring;
+    if not IsKBMAGRewritingSystemRep(rws)  then
+       Error("First argument is not a rewriting system.");
+    fi;
+    if IsConfluentRWS(rws) then
+       Print("#The rewriting system is already confluent.\n");
+       Print("#Call - ResetRWS(<rws>) to restart.\n");
+       return fail;
+    fi;
+    #If we have already run KBRWS then the original equations will
+    #have been kept and should be re-inserted.
+    AddOriginalEqnsRWS(rws);
+    #Keep the original equations, in case we want them again.
+    if not IsBound(rws!.originalEquations) then
+      rws!.originalEquations := StructuralCopy(rws!.equations);
+    fi;
+    WriteRWS(rws,_KBTmpFileName);
+    callstring := Concatenation(Filename(_KBExtDir,"kbprog")," -v ",_KBTmpFileName);
+    Info(InfoRWS,1,"Calling external Knuth-Bendix program.");
+    Info(InfoRWS,3,"  ", callstring);
+    Exec(callstring);
+    UpdateRWS(rws,_KBTmpFileName,true);
+    Exec(Concatenation("/bin/rm -f ",_KBTmpFileName,"*"));
+    Info(InfoRWS,1,"External Knuth-Bendix program complete.");
+    
+    if rws!.isConfluent then
+      O := rws!.options;
+      if IsBound(O.maxstoredlen) or IsBound(O.maxoplen) then
+        Print(
+ "#WARNING: Because of the control parameters you set, the system may\n");
+        Print(
+ "#         not be confluent. Unbind the parameters and re-run KnuthBendix\n");
+        Print(
+ "#         to check!\n");
+        rws!.isConfluent:=false;
+      fi;
+    fi;
+    if rws!.isConfluent then
+      Info(InfoRWS,1,"System computed is confluent.");
+      rws!.isAvailableNormalForm := true;
+      rws!.warningOn := false;
+    else
+      Info(InfoRWS,1,"System computed is NOT confluent.");
+      rws!.isAvailableNormalForm := false;
+      rws!.warningOn := true;
+    fi;
+    rws!.KBRun := true;
+    rws!.isAvailableReduction := true;
+    rws!.isAvailableSize := true;
+    return rws!.isConfluent;
+end;;
+MakeConfluent(s);
+s;
