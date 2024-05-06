@@ -87,4 +87,4 @@ def b3 : Equiv.Perm (Fin 5) := c[3, 2, 4, 1]
 def b4 : Equiv.Perm (Fin 5) := c[3, 1, 2]
 
 theorem test2 : d ∈ Group.closure {b1, b2, b3, b4} := by
-  permutation
+  perm_group_membership

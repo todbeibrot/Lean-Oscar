@@ -106,7 +106,7 @@ def PermsToList (u) (α : Q(Type $u)) (g : Q($α)) (gens : Q(Set $α)) : MetaM $
   return (q($g :: $gens), q($gens))
 
 /- Solves goals of type `x ∈ Group.closure {a, b, c, ...}` where `x`, `a`, `b`, `c`, ... are permutations -/
-def permutation (goal : MVarId) : TacticM Unit := do
+def perm_group_membership (goal : MVarId) : TacticM Unit := do
   let goal_type ← goal.getType
   let some (g_type, γ, mem_inst, g, closure_set) := app5? goal_type ``Membership.mem | throwError "not a goal of type g ∈ G"
   let .sort sort_v ← inferType γ | throwError "not a sort"
@@ -125,7 +125,7 @@ def permutation (goal : MVarId) : TacticM Unit := do
   let n' ← unsafe evalExpr ℕ q(ℕ) n
   have n : Q(ℕ) := toExpr n'
   let mrdi : Mrdi ← IO.MrdiFile.Mrdi? g_and_gens
-  let word_mrdi : Mrdi ← julia "permutation" mrdi
+  let word_mrdi : Mrdi ← julia "perm group membership" mrdi
   let word : Q(FreeGroup (Fin $n)) ← evalMrdi q(FreeGroup (Fin $n)) word_mrdi
   let word : Q(Expr) := q(toExpr $word)
   let word ← unsafe evalExpr Expr q(Expr) word
@@ -146,12 +146,47 @@ def permutation (goal : MVarId) : TacticM Unit := do
   replaceMainGoal (new_goal ++ eq_goal)
 
 /- Solves goals of type `x ∈ Group.closure {a, b, c, ...}` where `x`, `a`, `b`, `c`, ... are permutations -/
-syntax "permutation " : tactic
+syntax "perm_group_membership " : tactic
 elab_rules : tactic
-  | `(tactic| permutation) => do
+  | `(tactic| perm_group_membership) => do
     let goal ← getMainGoal
-    permutation goal
+    perm_group_membership goal
 
 end Permutation
+
+section KBMAG
+
+/-- Takes a matrix, returns the type of the elements and the dimensions -/
+private def fingroupType (u) (x : Q(Type $u)) : MetaM (Q(Type u) × Q(ℕ) × Q(ℕ)) := match x with
+  | ~q(((Matrix (Fin ($m + 1)) (Fin ($n + 1)))) $α) => return (q($α), q($m) ,q($n))
+  | _ => throwError "input didn't match expected type"
+
+def fp_group_n {n : Q(ℕ)} {rels : Q(List (FreeGroup (Fin $n)))}
+  (G : Q(PresentedGroup (List.toSet $rels))) :
+  MetaM Q(ℕ) := do
+    return q($n)
+
+def fp_group_rels {n : Q(ℕ)} {rels : Q(List (FreeGroup (Fin $n)))}
+  (G : Q(PresentedGroup (List.toSet $rels))) :
+  MetaM Q(List (FreeGroup (Fin $n))) := do
+    return q($rels)
+
+def fp_group_group {n : Q(ℕ)} {rels : Q(List (FreeGroup (Fin $n)))}
+  (G : Q(PresentedGroup (List.toSet $rels))) :
+  MetaM Q(PresentedGroup (List.toSet $rels)) := do
+    return q($G)
+
+def kbmag (G : Expr) (goal : MVarId) : TacticM Unit := do
+  let n ← fp_group_n G
+  return
+
+syntax "kbmag " term : tactic
+elab_rules : tactic
+  | `(tactic| kbmag $G) => do
+    let G ← elabTerm G none
+    let goal ← getMainGoal
+    kbmag G goal
+
+end KBMAG
 
 end Mrdi.Tactic

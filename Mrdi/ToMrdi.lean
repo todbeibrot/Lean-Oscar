@@ -16,6 +16,10 @@ section Basic
 -- make a template wich can be used for copy and paste.
 -- so I don't need to remember everything that has to be implemented
 
+-- TODO
+-- check uuids again
+
+
 /-- In julia we start counting at 1 not 0. So some data has to be shifted -/
 private def PlusOneShift : Mrdi.Data → Mrdi.Data := Mrdi.Data.map
   fun s => match String.toNat? s with
@@ -92,7 +96,7 @@ instance [ToMrdiType α] [Inhabited α] : ToMrdiType (Array α) :=
   ⟨fun uuids _ => return MrdiType.obj "Vector" $ Mrdi.TypeToData $ ← toMrdiType uuids (default : α)⟩
 
 instance [ToRefs α] [Inhabited α] : ToRefs $ Array α where
-  toRefs uuids a := toRefs uuids a[0]!
+  toRefs uuids _ := toRefs uuids (default : α)
 
 end Array
 
@@ -258,7 +262,7 @@ instance : ToMrdiType $ Equiv.Perm (Fin n) where
   toMrdiType uuids _ := return MrdiType.obj "PermGroupElem" (Data.str $ toString uuids[0]!)
 
 instance : ToRefs $ Equiv.Perm (Fin (n + 1)) where
-  toRefs uuids p := return mkRefs [(uuids[1]!, ← toRef uuids p)]
+  toRefs uuids p := return mkRefs [(uuids[0]!, ← toRef uuids p)]
 
 end Permutation
 
@@ -289,7 +293,7 @@ instance [Fintype α] : ToData $ TypeWrapper $ FreeGroup α where
 
 -- the first uuid should be a reference to the free group
 instance : ToMrdiType $ FreeGroup α where
-  toMrdiType uuids _ := return MrdiType.obj "FPGroupElem" (Mrdi.Data.str (toString uuids[1]!))
+  toMrdiType uuids _ := return MrdiType.obj "FPGroupElem" (Mrdi.Data.str (toString uuids[0]!))
 
 -- convert a Bool to a Int, false -> -1, true -> 1
 private def Bool.isInvToInt : Bool → Int
@@ -312,7 +316,7 @@ instance [Fintype α] : ToRef $ FreeGroup α where
   toRef _ g := return mk none (← toMrdiType [] (get_t g)) (← toData [] (get_t g)) none none
 
 instance [Fintype α] : ToRefs $ FreeGroup α where
-  toRefs uuids g := return mkRefs [(uuids[1]!, ← toRef uuids g)]
+  toRefs uuids g := return mkRefs [(uuids[0]!, ← toRef uuids g)]
 
 end FreeGroup
 
@@ -327,11 +331,11 @@ instance : ToMrdiType $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (L
 instance [FinEnum α] : ToData $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
   toData uuids _ := do
     let x := Data.mkObj
-      [("GapType", Data.str "IsSubgroupFpGroup"), ("freeGroup", Data.str (toString uuids[1]!)), ("relators", ← toData uuids rels)]
+      [("GapType", Data.str "IsSubgroupFpGroup"), ("freeGroup", Data.str (toString uuids[0]!)), ("relators", ← toData uuids rels)]
     return Data.mkObj [("X", x)]
 
 instance [Fintype α] : ToRefs $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
-  toRefs uuids _ := return mkRefs [(uuids[1]!, ← toRef uuids (default : FreeGroup α))]
+  toRefs uuids _ := return mkRefs [(uuids[0]!, ← toRef uuids (default : FreeGroup α))]
 
 /- TODO delete this instance. it's for debugging -/
 instance [FinEnum α] : ToMrdi $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
