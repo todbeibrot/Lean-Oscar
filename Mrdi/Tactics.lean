@@ -156,36 +156,86 @@ end Permutation
 
 section KBMAG
 
-/-- Takes a matrix, returns the type of the elements and the dimensions -/
-private def fingroupType (u) (x : Q(Type $u)) : MetaM (Q(Type u) × Q(ℕ) × Q(ℕ)) := match x with
-  | ~q(((Matrix (Fin ($m + 1)) (Fin ($n + 1)))) $α) => return (q($α), q($m) ,q($n))
-  | _ => throwError "input didn't match expected type"
-
-def fp_group_n {n : Q(ℕ)} {rels : Q(List (FreeGroup (Fin $n)))}
-  (G : Q(PresentedGroup (List.toSet $rels))) :
+private def fp_group_n {u} {α : Q(Type $u)} (rels : Q(List (FreeGroup $α))) :
   MetaM Q(ℕ) := do
-    return q($n)
+    match q($α) with
+    | ~q(Fin $n) => return q($n)
+    | _ => throwError "not a Fin n"
 
-def fp_group_rels {n : Q(ℕ)} {rels : Q(List (FreeGroup (Fin $n)))}
-  (G : Q(PresentedGroup (List.toSet $rels))) :
-  MetaM Q(List (FreeGroup (Fin $n))) := do
-    return q($rels)
+private def fingroupType
+  (u) (G : Q(Sort $u)) :
+  MetaM Q(ℕ) := match q($G) with
+    | ~q(PresentedGroup (List.toSet $rels)) => do
+        let n ← fp_group_n q($rels)
+        return n
+    | _ => throwError "input didn't match expected type"
 
-def fp_group_group {n : Q(ℕ)} {rels : Q(List (FreeGroup (Fin $n)))}
+private def fpgroupRels (n : Q(ℕ))
+  (u) (G : Q(Sort $u)) :
+  MetaM Q(List (FreeGroup (Fin $n))) := match q($G) with
+    | ~q(PresentedGroup (List.toSet $rels)) => do
+        have rels : Q(List (FreeGroup (Fin $n))) := rels
+        return rels
+    | _ => throwError "input didn't match expected type"
+
+private def fp_group_group (n : Q(ℕ)) (rels : Q(List (FreeGroup (Fin $n))))
   (G : Q(PresentedGroup (List.toSet $rels))) :
   MetaM Q(PresentedGroup (List.toSet $rels)) := do
     return q($G)
 
-def kbmag (G : Expr) (goal : MVarId) : TacticM Unit := do
-  let n ← fp_group_n G
-  return
+-- TODO what should be reduced first?
+def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
+  goal.withContext do
+    let ⟨u, G, g⟩ ← inferTypeQ g
+
+    let n ← fingroupType u G
+    let n' : ℕ ← unsafe evalExpr ℕ q(ℕ) n
+    let rels ← fpgroupRels n u G
+    let G ← fp_group_group n rels G
+    let G_stx := ← Term.exprToSyntax G
+    let mrdi : Mrdi ← IO.MrdiFile.Mrdi? g
+
+    let val_ident (i : ℕ) := mkIdent (.str .anonymous s!"_g{2 * i + 1}")
+    let val_def_ident (i : ℕ) := mkIdent (.str .anonymous s!"_g{2 * i + 1}_def")
+    let inv_ident (i : ℕ) := mkIdent (.str .anonymous s!"_g{2 * i + 2}")
+    let def_inv_ident (i : ℕ) := mkIdent (.str .anonymous s!"_g{2 * i + 2}_def")
+    let val_inv_ident (i : ℕ) := mkIdent (.str .anonymous s!"h{2 * i + 1}")
+    let inv_val_ident (i : ℕ) := mkIdent (.str .anonymous s!"h{2 * i + 2}")
+
+    for i in List.range n' do
+      evalTactic (← `(tactic|
+        set $(val_ident i) : $G_stx := PresentedGroup.of $(quote i) with $(val_def_ident i);
+        set $(inv_ident i) : $G_stx := (PresentedGroup.of $(quote i))⁻¹ with $(def_inv_ident i);
+        (have $(val_inv_ident i) : $(val_ident i) * $(inv_ident i) = 1 := by apply mul_inv_self);
+        have $(inv_val_ident i) : $(inv_ident i) * $(val_ident i) = 1 := by apply inv_mul_self
+      ))
+
+    --let word_mrdi : Mrdi ← julia "kbmag" mrdi
+    return
 
 syntax "kbmag " term : tactic
 elab_rules : tactic
-  | `(tactic| kbmag $G) => do
-    let G ← elabTerm G none
+  | `(tactic| kbmag $g) => do
+    let g ← elabTerm g none
     let goal ← getMainGoal
-    kbmag G goal
+    kbmag g goal
+
+@[reducible]
+def f := FreeGroup (Fin 2)
+
+def a : f := FreeGroup.mk [(1, true)]
+def b : f := FreeGroup.mk [(2, true)]
+
+def rels_list := [a * b * a⁻¹ * b⁻¹ * a⁻¹, b * a * b⁻¹ * a⁻¹ * b⁻¹]
+@[reducible]
+def rels := List.toSet rels_list
+
+@[reducible]
+def g := PresentedGroup rels
+
+def test : List f := by
+  kbmag (1 : g)
+  sorry
 
 end KBMAG
 

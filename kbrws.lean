@@ -1,5 +1,6 @@
 import Mathlib
-import Mrdi
+--import Mrdi
+import Mrdi.ListToSet
 
 
 
@@ -15,12 +16,34 @@ def rels := List.toSet rels_list
 @[reducible]
 def g := PresentedGroup rels
 
+def a' : g := PresentedGroup.of 1
+
+theorem to_group_eq_one_of_mem_closure' {G : Type*} [Group G] {f : α → G} {rels : Set (FreeGroup α)}
+  (h : ∀ r ∈ rels, FreeGroup.lift f r = 1) :
+  ∀ x ∈ Subgroup.normalClosure rels, (FreeGroup.lift f) x = 1 := by
+    apply PresentedGroup.to_group_eq_one_of_mem_closure h
+
+theorem x (word : FreeGroup α) (rels : Set (FreeGroup α)) (h : word ∈ rels) :
+  (QuotientGroup.mk word : PresentedGroup rels) = 1 := by
+    simp only [QuotientGroup.eq_one_iff]
+    exact Subgroup.subset_normalClosure h
+
+theorem x' (word : FreeGroup α) (rels_list : List (FreeGroup α)) (h : word ∈ rels_list) :
+  (QuotientGroup.mk word : PresentedGroup (List.toSet rels_list)) = 1 := by
+    simp only [QuotientGroup.eq_one_iff]
+    apply Subgroup.subset_normalClosure
+    simp only [List.toSet_mem, h]
+
+theorem y {G : Type*} [Group G] {a b : G} (h : a = b) : a * b⁻¹ = 1 := by
+  exact mul_inv_eq_one.mpr h
+
 -- doesnt work well
 theorem overlap {a b c d : G} [Group G] (h : a = b) (h' : c = d)
   (h_left : lhs = a * c) (h_right : rhs = b * d) :
   lhs = rhs := by
     rw [h_left, h_right, h, h']
 
+-- better
 theorem overlap' {a b c d : G} [Group G] (h : a = b) (h' : a * c = b * d) :
   c = d := by
     rw [h] at h'
@@ -33,21 +56,30 @@ theorem overlap'' {a b c d : G} [Group G] (h : a = b) (h' : c * a = d * b) :
 
 -- TODO get rid of exponents
 theorem g_triv : ∀ x : g, x = 1 := by
-  set _g1 := a with _g1_def
-  set _g2 := _g1⁻¹ with _g2_def
-  set _g3 := b with _g3_def
-  set _g4 := _g3⁻¹ with _g4_def
+  set _g1 : g := .of 1 with _g1_def
+  set _g2 : g := (.of 1)⁻¹ with _g2_def
+  set _g3 : g := .of 2 with _g3_def
+  set _g4 : g := (.of 2)⁻¹ with _g4_def
 
   -- relations
-  have h1 : _g1*_g2 = 1 := sorry
+  have h1 : _g1*_g2 = 1 := by
+    apply mul_inv_self
   have h2:
-    _g2*_g1 = 1 := sorry
+    a⁻¹*a = 1 := by apply inv_mul_self
   have h3:
     _g3*_g4 = 1 := sorry
   have h4:
     _g4*_g3 = 1 := sorry
   have h5:
-    _g2*_g4*_g1 = _g1*_g4 := sorry
+    -- a * b * a⁻¹ * b⁻¹ * a⁻¹
+    _g2*_g4*_g1 = _g1*_g4 := by
+      rw [← mul_inv_eq_one]
+      suffices h : (QuotientGroup.mk rels_list[0] : PresentedGroup rels) = 1
+      · simp [← h, a, b, _g2_def, _g1_def, _g4_def, PresentedGroup.of, FreeGroup.of, rels_list]
+        group
+        sorry
+      apply x'
+      apply List.get_mem
   have h6:
     _g4*_g2*_g3 = _g3*_g2 := sorry
 
