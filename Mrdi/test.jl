@@ -39,7 +39,7 @@ s = GAP.Globals.KBMAGRewritingSystem(g2)
 # to 
 # callstring := Concatenation(Filename(_KBExtDir,"kbprog")," -ve ",_KBTmpFileName);
 # This change leads to print messages during MakeConfluent
-x = GAP.evalstr_ex("""
+GAP.evalstr_ex("""
 KBRWS := function ( rws )
     local O, callstring;
     if not IsKBMAGRewritingSystemRep(rws)  then
@@ -94,4 +94,53 @@ KBRWS := function ( rws )
 end;;
 """)
 
-GAP.Globals.MakeConfluent(s)
+pipe = Pipe()
+writer = @async redirect_stdout(pipe) do
+    GAP.Globals.MakeConfluent(s)
+    close(Base.pipe_writer(pipe))
+end
+
+# Why do we need the next line???
+println("read result")
+s = read(pipe, String)
+wait(writer)
+s = replace(s, "IdWord" => "1")
+s = replace(s, "->" => "=")
+
+# Delete everything after the substring
+substring = "#Search for overlaps is complete."
+pattern = Regex("(?s)" * substring * ".*")
+s = replace(s, pattern => "")
+
+# Split lines and delete all empty lines
+lines = filter(x -> !isempty(x), split(s, '\n'))
+# Delete everything before '#' in every line
+lines = map(line -> replace(line, r"^.*?#" => ""), lines)
+
+# I want to have a Vector where every element consists of
+# equation number, initial/overlap, two overlap numbers, equation
+
+v = Tuple{Int, Bool, Int, Int, String}[]
+for i in range(1, length=length(lines) ÷ 2, step=2)
+    equation = lines[i + 1]
+    new_equation = occursin("New equation" ,lines[i])
+    matches = collect(eachmatch(r"\d+", lines[i]))
+    if length(matches) < 1
+        error("line should contain equation number. line is ", line[i])
+    end
+    equation_number = parse(Int, matches[1].match)
+    if new_equation
+        if length(matches) < 3
+            error("expected 3 values: number of the equation and two overlaps. line is ", lines[i])
+        end
+        overlap1 = parse(Int, matches[2].match)
+        overlap2 = parse(Int, matches[3].match)
+        push!(v, (equation_number, new_equation, overlap1, overlap2, equation))
+    else
+        push!(v, (equation_number, new_equation, 0, 0, equation))
+    end
+end
+
+for element in v
+    println(element)
+end
