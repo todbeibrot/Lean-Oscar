@@ -126,6 +126,19 @@ instance [ToRefs α] [Inhabited α] : ToRefs $ Vector α n where
 
 end Vector
 
+-- section Tuple
+
+-- instance [ToData α] [ToData β] : ToData (α × β) where
+--   toData uuids x := toData uuids x
+
+-- instance [ToMrdiType α] [ToMrdiType β] : ToMrdiType (α × β) :=
+--   ⟨fun uuids x => toMrdiType uuids x⟩
+
+-- instance [ToRefs α] [ToRefs β] : ToRefs (α × β) where
+--   toRefs uuids x := toRefs uuids x
+
+-- end Tuple
+
 section Rat
 
 instance : ToData ℚ where
