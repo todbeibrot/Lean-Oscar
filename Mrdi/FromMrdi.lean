@@ -1,5 +1,6 @@
 import Mathlib
 import Mrdi.Basic
+import Mrdi.ToMrdi
 
 namespace Mrdi
 
@@ -75,6 +76,20 @@ instance [FromMrdiData α] : FromMrdiData (List α) where
   fromMrdiData? data := do
     let a : Array α ← fromMrdiData? data
     return a.toList
+
+instance [FromMrdiData α] [FromMrdiData β] : FromMrdiData (α × β) where
+  fromMrdiData? data := do
+    let data_arr ← data.getArr?
+    let a : α ← fromMrdiData? data_arr[0]!
+    let b : β ← fromMrdiData? data_arr[1]!
+    return ⟨a, b⟩
+
+instance [FromMrdiData α] [FromMrdiData (β × γ)] : FromMrdiData (α × β × γ) where
+  fromMrdiData? data := do
+    let data_arr ← data.getArr?
+    let a : α ← fromMrdiData? data_arr[0]!
+    let b : β × γ ← fromMrdiData? (.arr ⟨data_arr.data.tail⟩)
+    return ⟨a, b⟩
 
 -- TODO better names for variables
 noncomputable instance [Semiring R] [FromMrdiData R] : FromMrdiData (Polynomial R) where

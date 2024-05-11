@@ -246,6 +246,9 @@ def mkRefs (o : List (UUID × Mrdi)) : RBNode UUID fun _ => Mrdi := Id.run do
     kvPairs := kvPairs.insert compare k v
   kvPairs
 
+def appendRefs (ref₁ ref₂ : RBNode UUID fun _ => Mrdi) : RBNode UUID fun _ => Mrdi :=
+  RBNode.appendTrees ref₁ ref₂
+
 def TypeToData : MrdiType → Mrdi.Data
   | MrdiType.str s => Mrdi.Data.str s
   | MrdiType.obj name? params? => Id.run do

@@ -126,18 +126,27 @@ instance [ToRefs α] [Inhabited α] : ToRefs $ Vector α n where
 
 end Vector
 
--- section Tuple
+section Tuple
 
--- instance [ToData α] [ToData β] : ToData (α × β) where
---   toData uuids x := toData uuids x
+instance [ToData α] [ToData β] : ToData (α × β) where
+  toData uuids x := return Mrdi.Data.arr #[← toData uuids x.1, ← toData uuids x.2]
 
--- instance [ToMrdiType α] [ToMrdiType β] : ToMrdiType (α × β) :=
---   ⟨fun uuids x => toMrdiType uuids x⟩
+instance [ToMrdiType α] [ToMrdiType β] : ToMrdiType (α × β)
+  where toMrdiType uuids x := do
+    return MrdiType.obj "Tuple" $
+      Mrdi.Data.arr #[Mrdi.TypeToData $ ← toMrdiType uuids x.1, Mrdi.TypeToData $ ← toMrdiType uuids x.2]
 
--- instance [ToRefs α] [ToRefs β] : ToRefs (α × β) where
---   toRefs uuids x := toRefs uuids x
+instance [ToRefs α] [ToRefs β] : ToRefs (α × β) where
+  toRefs uuids x := do
+    let refs₁ ← toRefs uuids x.1
+    let refs₂ ← toRefs uuids x.2
+    if refs₁.isNone then return refs₂
+    else if refs₂.isNone then return refs₂
+    let some refs₁ ← toRefs uuids x.1 | unreachable!
+    let some refs₂ ← toRefs uuids x.2 | unreachable!
+    return appendRefs refs₁ refs₂
 
--- end Tuple
+end Tuple
 
 section Rat
 

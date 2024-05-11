@@ -88,3 +88,8 @@ def b4 : Equiv.Perm (Fin 5) := c[3, 1, 2]
 
 theorem test2 : d ∈ Group.closure {b1, b2, b3, b4} := by
   perm_group_membership
+
+def tuple₁ : ℕ × Bool × ℤ × ℚ := ⟨1, true, 42, 1/3⟩
+def tuple₂ : ℕ × Bool × ℤ × ℚ := by load_file "tuple"
+
+#eval tuple₂

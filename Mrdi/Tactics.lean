@@ -193,7 +193,7 @@ def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
     let rels ← fpgroupRels n u G
     let G ← fp_group_group n rels G
     let G_stx := ← Term.exprToSyntax G
-    let mrdi : Mrdi ← IO.MrdiFile.Mrdi? g
+    let g_mrdi : Mrdi ← IO.MrdiFile.Mrdi? g
 
     let val_ident (i : ℕ) := mkIdent (.str .anonymous s!"_g{2 * i + 1}")
     let val_def_ident (i : ℕ) := mkIdent (.str .anonymous s!"_g{2 * i + 1}_def")
@@ -210,8 +210,20 @@ def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
         have $(inv_val_ident i) : $(inv_ident i) * $(val_ident i) = 1 := by apply inv_mul_self
       ))
 
-    --let word_mrdi : Mrdi ← julia "kbmag" mrdi
+    let s := "_g1 = _g2"
+    let ident := mkIdent (.str .anonymous s)
+    evalTactic (← `(tactic| have $(val_inv_ident 100) : $ident := by sorry))
+
+    -- let mrdi : Mrdi ← julia "kbmag" g_mrdi
+    -- -- equation number, initial/overlap, two overlap numbers, equation0
+    -- let steps ← evalMrdi' (List (ℕ × Bool × ℕ × ℕ × String)) mrdi
+    -- for step in steps do
+    --   let ⟨equation_number, new_equation, overlap₁, overlap₂, equation⟩ := step
     return
+
+
+#check Lean.Elab.runTactic
+#check Syntax.mkCApp
 
 syntax "kbmag " term : tactic
 elab_rules : tactic

@@ -1,0 +1,6 @@
+{
+    "_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","1.0.0-DEV-fbd34b88fbedbbcb729a1e2ea5037b1860cda204"]},
+    "_type":{
+        "name":"Tuple",
+        "params":["Base.Int","Bool","ZZRingElem","QQFieldElem"]},
+    "data":["1","true","42","1//3"]}
