@@ -1,0 +1,5 @@
+{
+    "_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","1.0.0-DEV-fbd34b88fbedbbcb729a1e2ea5037b1860cda204"]},
+    "_type":"String",
+    "data":"a * b * a^-1 * b^-1"
+    }

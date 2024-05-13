@@ -1,5 +1,11 @@
 using Oscar
-using JSON
+
+F = free_group(2)
+(a, b) = gens(F)
+str = "a * b * a^-1 * b^-1"
+str2 = "a"
+sym = Symbol(str)
+word = eval(str)
 
 R, x = QQ["x"]
 p = 3 * x^2 - x + 1
@@ -19,7 +25,7 @@ F = free_group(2)
 rels = relators(quot)
 tuple = (1, true, z, q)
 
-file = "tuple"
-save("mrdi-files/$file.mrdi", tuple)
+file = "word_test"
+save("mrdi-files/$file.mrdi", word)
 x = load("mrdi-files/$file.mrdi")
 println(x)

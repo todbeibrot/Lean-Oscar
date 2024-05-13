@@ -210,11 +210,11 @@ def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
         have $(inv_val_ident i) : $(inv_ident i) * $(val_ident i) = 1 := by apply inv_mul_self
       ))
 
-    let s := "_g1 = _g2"
-    let ident := mkIdent (.str .anonymous s)
-    evalTactic (← `(tactic| have $(val_inv_ident 100) : $ident := by sorry))
+    -- let s := "_g1 = _g2"
+    -- let ident := mkIdent (.str .anonymous s)
+    -- evalTactic (← `(tactic| have $(val_inv_ident 100) : $ident := by sorry))
 
-    -- let mrdi : Mrdi ← julia "kbmag" g_mrdi
+    let mrdi : Mrdi ← julia "kbmag" g_mrdi
     -- -- equation number, initial/overlap, two overlap numbers, equation0
     -- let steps ← evalMrdi' (List (ℕ × Bool × ℕ × ℕ × String)) mrdi
     -- for step in steps do

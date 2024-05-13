@@ -1,5 +1,4 @@
 using Oscar
-using JSON
 
 # R, x = QQ["x"]
 # p = 3 * x^2 - x + 1
@@ -24,15 +23,17 @@ using JSON
 # println(x)
 
 # rw system
-println("start loading")
 GAP.Packages.load("kbmag", install=true)
-println(GAP.Packages.locate_package("kbmag"))
-f = free_group(2)
-(a, b) = gens(f)
-rels = [comm(a, b) / a, comm(b, a) / b]
-g = quo(f, rels)[1]
-g2 = GAP.GapObj(g)
-s = GAP.Globals.KBMAGRewritingSystem(g2)
+# f = free_group(2)
+# rels = [comm(f[1], f[2]) / f[1], comm(f[2], f[1]) / f[2]]
+# g = quo(f, rels)[1]
+# save("test.mrdi", g)
+# g = load("test.mrdi")
+g = load("mrdi-files/fpgrouptest2.mrdi")
+GAP.Globals.g = g
+generators = gens(g)
+GAP.Globals.generators = generators
+rws = GAP.Globals.KBMAGRewritingSystem(GAP.GapObj(g))
 
 # The only change is 
 # callstring := Concatenation(Filename(_KBExtDir,"kbprog"),"  ",_KBTmpFileName);
@@ -95,34 +96,48 @@ end;;
 """)
 
 pipe = Pipe()
+event = Base.Event()
+# We want do intercept the messages printed my MakeConfluent.
+# This is asynchronous so the writer doesn't get stuck if the pipe is full.
 writer = @async redirect_stdout(pipe) do
-    GAP.Globals.MakeConfluent(s)
+    notify(event)
+    confluent = GAP.Globals.MakeConfluent(rws)
     close(Base.pipe_writer(pipe))
+    if !confluent
+        error("Failed to make the rws confluent")
+    end
 end
 
-# Why do we need the next line???
-println("read result")
-s = read(pipe, String)
+# Waiting for the event ensures that the reader doesn't start before we have some output
+wait(event)
+rws = read(pipe, String)
 wait(writer)
-s = replace(s, "IdWord" => "1")
-s = replace(s, "->" => "=")
-
+rws = replace(rws, "IdWord" => "One(g)")
+rws = replace(rws, "->" => "=")
 # Delete everything after the substring
 substring = "#Search for overlaps is complete."
 pattern = Regex("(?s)" * substring * ".*")
-s = replace(s, pattern => "")
-
+rws = replace(rws, pattern => "")
 # Split lines and delete all empty lines
-lines = filter(x -> !isempty(x), split(s, '\n'))
+lines = filter(x -> !isempty(x), split(rws, '\n'))
 # Delete everything before '#' in every line
 lines = map(line -> replace(line, r"^.*?#" => ""), lines)
-
-# I want to have a Vector where every element consists of
-# equation number, initial/overlap, two overlap numbers, equation
-
-v = Tuple{Int, Bool, Int, Int, String}[]
-for i in range(1, length=length(lines) ÷ 2, step=2)
+result = Tuple{Int, Bool, Int, Int, FPGroupElem, FPGroupElem}[]
+# We don't start at 1 cause the first equations will be trivial
+for i in range(1 + 4 * length(generators), length=length(lines) ÷ 2 - 2 * length(generators), step=2)
     equation = lines[i + 1]
+    for j in range(1, length=length(generators))
+        equation = replace(equation, "_g" * string(2 * j - 1) => "generators[$j]")
+        equation = replace(equation, "_g" * string(2 * j) => "(generators[$j]^-1)")
+    end
+    words = split(equation, "=")
+    lhs_string = String(words[1])
+    rhs_string = String(words[2])
+    (success_lhs, lhs, _, _, _) = GAP.evalstr_ex(lhs_string * ";;")[1]
+    (success_rhs, rhs, _, _, _) = GAP.evalstr_ex(rhs_string * ";;")[1]
+    if !(success_lhs && success_rhs)
+        error("failed to evaluate words in GAP:\n " * lhs_string * ",\n" * rhs_string)
+    end
     new_equation = occursin("New equation" ,lines[i])
     matches = collect(eachmatch(r"\d+", lines[i]))
     if length(matches) < 1
@@ -135,12 +150,9 @@ for i in range(1, length=length(lines) ÷ 2, step=2)
         end
         overlap1 = parse(Int, matches[2].match)
         overlap2 = parse(Int, matches[3].match)
-        push!(v, (equation_number, new_equation, overlap1, overlap2, equation))
+        push!(result, (equation_number, new_equation, overlap1, overlap2, lhs, rhs))
     else
-        push!(v, (equation_number, new_equation, 0, 0, equation))
+        push!(result, (equation_number, new_equation, 0,        0,        lhs, rhs))
     end
 end
-
-for element in v
-    println(element)
-end
+save("kbmag.mrdi", result)

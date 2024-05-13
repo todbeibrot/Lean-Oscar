@@ -93,3 +93,18 @@ def tuple₁ : ℕ × Bool × ℤ × ℚ := ⟨1, true, 42, 1/3⟩
 def tuple₂ : ℕ × Bool × ℤ × ℚ := by load_file "tuple"
 
 #eval tuple₂
+
+@[reducible]
+def f := FreeGroup (Fin 2)
+
+def a : f := FreeGroup.mk [(1, true)]
+def b : f := FreeGroup.mk [(2, true)]
+
+def rels_list := [a * b * a⁻¹ * b⁻¹ * a⁻¹, b * a * b⁻¹ * a⁻¹ * b⁻¹]
+@[reducible]
+def rels := List.toSet rels_list
+
+@[reducible]
+def g := PresentedGroup rels
+
+--#writeMrdi (1 : PresentedGroup rels) to "fpgrouptest2"

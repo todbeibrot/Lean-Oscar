@@ -34,6 +34,15 @@ inductive TypeWrapper
   | get_t (a : α)
   deriving Inhabited
 
+/--
+`GAPWrapper` is wrapper for types to signal that we want the type `α` itself and not something of type `α`.
+So it is like `TypeWrapper`. But we also want to signal that it should be a GAP object. -/
+-- TODO better names
+inductive GAPWrapper
+  | dummy
+  | get_t (a : α)
+  deriving Inhabited
+
 -- TODO delete?
 def Unwrap : TypeWrapper α → Type u := fun _ => α
 
@@ -82,6 +91,13 @@ instance [ToRef α] [Inhabited α] : ToMrdi $ TypeWrapper α where
 
 instance [ToMrdi $ TypeWrapper α] : ToRef α where
   toRef uuids a := toMrdi uuids (TypeWrapper.get_t a)
+
+-- uuids[0] will be the id for this object
+instance [ToRef α] [Inhabited α] : ToMrdi $ GAPWrapper α where
+  toMrdi uuids _ := return (← toRef uuids (default : α)).setId uuids[0]!
+
+instance [ToMrdi $ GAPWrapper α] : ToRef α where
+  toRef uuids a := toMrdi uuids (GAPWrapper.get_t a)
 
 end Basic
 
@@ -306,12 +322,19 @@ section FreeGroup
 instance : ToMrdiType $ TypeWrapper $ FreeGroup α where
   toMrdiType _ _ := return MrdiType.str "FPGroup"
 
--- TODO do we need to specify everything?
 instance [Fintype α] : ToData $ TypeWrapper $ FreeGroup α where
   toData _ _ := do
     let names := Data.arr ⟨List.map (Mrdi.Data.str s!"x{· + 1}") (List.range (Fintype.card α))⟩
     let x := Data.mkObj [("GapType", Data.str "IsFreeGroup"), ("wfilt", Data.str "IsLetterWordsFamily"), ("names", names)]
     return Data.mkObj [("X", x)]
+
+instance : ToMrdiType $ GAPWrapper $ FreeGroup α where
+  toMrdiType _ _ := return MrdiType.str "GAP.GapObj"
+
+instance [Fintype α] : ToData $ GAPWrapper $ FreeGroup α where
+  toData _ _ := do
+    let names := Data.arr ⟨List.map (Mrdi.Data.str s!"x{· + 1}") (List.range (Fintype.card α))⟩
+    return Data.mkObj [("GapType", Data.str "IsFreeGroup"), ("wfilt", Data.str "IsLetterWordsFamily"), ("names", names)]
 
 -- the first uuid should be a reference to the free group
 instance : ToMrdiType $ FreeGroup α where
@@ -337,6 +360,9 @@ instance [FinEnum α] : ToData $ FreeGroup α where
 instance [Fintype α] : ToRef $ FreeGroup α where
   toRef _ g := return mk none (← toMrdiType [] (get_t g)) (← toData [] (get_t g)) none none
 
+def GAPFreeGroupRef [Fintype α] : ToRef $ FreeGroup α where
+  toRef _ g := return mk none (← toMrdiType [] (GAPWrapper.get_t g)) (← toData [] (GAPWrapper.get_t g)) none none
+
 instance [Fintype α] : ToRefs $ FreeGroup α where
   toRefs uuids g := return mkRefs [(uuids[0]!, ← toRef uuids g)]
 
@@ -357,7 +383,7 @@ instance [FinEnum α] : ToData $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalC
     return Data.mkObj [("X", x)]
 
 instance [Fintype α] : ToRefs $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
-  toRefs uuids _ := return mkRefs [(uuids[0]!, ← toRef uuids (default : FreeGroup α))]
+  toRefs uuids _ := return mkRefs [(uuids[0]!, ← (GAPFreeGroupRef α).toRef uuids (default : FreeGroup α))]
 
 /- TODO delete this instance. it's for debugging -/
 instance [FinEnum α] : ToMrdi $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
