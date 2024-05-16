@@ -37,32 +37,31 @@ theorem x' (word : FreeGroup α) (rels_list : List (FreeGroup α)) (h : word ∈
 theorem y {G : Type*} [Group G] {a b : G} (h : a = b) : a * b⁻¹ = 1 := by
   exact mul_inv_eq_one.mpr h
 
--- doesnt work well
-theorem overlap {a b c d : G} [Group G] (h : a = b) (h' : c = d)
-  (h_left : lhs = a * c) (h_right : rhs = b * d) :
-  lhs = rhs := by
-    rw [h_left, h_right, h, h']
-
 -- better
-theorem overlap' {a b c d : G} [Group G] (h : a = b) (h' : a * c = b * d) :
-  c = d := by
+theorem overlap {a b c d : G} [Group G] (h : a = b) (h' : a * c = b * d) :
+  d = c := by
     rw [h] at h'
-    apply mul_left_cancel h'
+    apply mul_left_cancel h'.symm
 
-theorem overlap'' {a b c d : G} [Group G] (h : a = b) (h' : c * a = d * b) :
-  c = d := by
+theorem overlap' {a b c d : G} [Group G] (h : a = b) (h' : c * a = d * b) :
+  d = c := by
     rw [h] at h'
-    apply mul_right_cancel h'
+    apply mul_right_cancel h'.symm
 
 -- TODO get rid of exponents
 theorem g_triv : ∀ x : g, x = 1 := by
-  set _g1 : g := .of 1 with _g1_def
-  set _g2 : g := (.of 1)⁻¹ with _g2_def
-  set _g3 : g := .of 2 with _g3_def
-  set _g4 : g := (.of 2)⁻¹ with _g4_def
+  -- set _g1 : g := .of 1 with _g1_def
+  -- set _g2 : g := (.of 1)⁻¹ with _g2_def
+  -- set _g3 : g := .of 2 with _g3_def
+  -- set _g4 : g := (.of 2)⁻¹ with _g4_def
+  set _g1 : f := .of 1 with _g1_def
+  set _g2 : f := (.of 1)⁻¹ with _g2_def
+  set _g3 : f := .of 2 with _g3_def
+  set _g4 : f := (.of 2)⁻¹ with _g4_def
 
   -- relations
-  have h1 : _g1*_g2 = 1 := by
+  have h1 : (QuotientGroup.mk (_g1*_g2) : g) = 1 := by
+    simp only [QuotientGroup.mk_mul, QuotientGroup.mk_inv, QuotientGroup.mk_one, QuotientGroup.mk_div, QuotientGroup.mk_pow, QuotientGroup.mk_zpow]
     apply mul_inv_self
   have h2:
     a⁻¹*a = 1 := by apply inv_mul_self
@@ -72,7 +71,7 @@ theorem g_triv : ∀ x : g, x = 1 := by
     _g4*_g3 = 1 := sorry
   have h5:
     -- a * b * a⁻¹ * b⁻¹ * a⁻¹
-    _g2*_g4*_g1 = _g1*_g4 := by
+    (QuotientGroup.mk (_g2*_g4*_g1) : g) = (QuotientGroup.mk (_g1*_g4) : g) := by
       rw [← mul_inv_eq_one]
       suffices h : (QuotientGroup.mk rels_list[0] : PresentedGroup rels) = 1
       · simp [← h, a, b, _g2_def, _g1_def, _g4_def, PresentedGroup.of, FreeGroup.of, rels_list]
@@ -85,15 +84,26 @@ theorem g_triv : ∀ x : g, x = 1 := by
 
   -- start rws
   have h7 : --5, 1:
-    _g1*_g4*_g2 = _g2*_g4 := by
-      symm
-      apply overlap'' h1
-      simp only [one_mul, mul_one, sq, ← mul_assoc]
-      congr 1
+    (QuotientGroup.mk (_g1*_g4*_g2) : g) = (QuotientGroup.mk (_g2*_g4) : g)  := by
+      simp only [QuotientGroup.mk_mul, QuotientGroup.mk_inv, QuotientGroup.mk_one,
+        QuotientGroup.mk_div, QuotientGroup.mk_pow, QuotientGroup.mk_zpow]
+      solve
+      | apply overlap' h1
+        simp only [one_mul, mul_one, sq, ← mul_assoc,
+          QuotientGroup.mk_mul, QuotientGroup.mk_inv, QuotientGroup.mk_one,
+          QuotientGroup.mk_div, QuotientGroup.mk_pow, QuotientGroup.mk_zpow]
+        repeat congr 1
+      | apply overlap h5
+        simp only [one_mul, mul_one, sq, ← mul_assoc,
+          QuotientGroup.mk_mul, QuotientGroup.mk_inv, QuotientGroup.mk_one,
+          QuotientGroup.mk_div, QuotientGroup.mk_pow, QuotientGroup.mk_zpow]
+        repeat congr 1
+
+
   have h8 : --1, 5:
     _g1^2*_g4 = _g4*_g1 := by
       symm
-      apply overlap' h1
+      apply overlap h1
       simp only [one_mul, mul_one, sq, mul_assoc]
       congr 1
   have h9 : --6, 3:
@@ -128,5 +138,5 @@ theorem g_triv : ∀ x : g, x = 1 := by
       simp only [sq] at *
 
       sorry
-
+  rewrite
   sorry

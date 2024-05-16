@@ -19,6 +19,10 @@ def test_int : Int := by load_file "int"
 
 def x₂ : FreeGroup (Fin 2) := by load_file "free_group_word"
 #readMrdi FreeGroup (Fin 2) from "free_group_word"
+-- #writeMrdi x₂ to "test"
+-- def x₃ : FreeGroup (Fin 2) := by load_file "test"
+
+-- theorem test1 : x₂ = x₃ := by rfl
 --#eval x₂ doesn't work cause `Repr FreeGroup` is not implemented
 --#echo x₂
 

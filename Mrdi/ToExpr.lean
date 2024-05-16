@@ -63,6 +63,7 @@ section Permutations
 
 open Equiv Equiv.Perm
 
+-- TODO mkConst in toTypeExpr need specified List of Levels?
 instance : ToExpr (Equiv.Perm (Fin (n + 1))) where
   toTypeExpr := mkApp (mkConst ``Equiv.Perm) (toTypeExpr (Fin n))
   toExpr p := Id.run <| do
@@ -83,7 +84,7 @@ end Permutations
 section FreeGroup
 
 instance {α : Type u}  [ToExpr α] [DecidableEq α] [ToLevel.{u}] : ToExpr $ FreeGroup α where
-  toTypeExpr := mkApp (mkConst ``FreeGroup) (toTypeExpr α)
+  toTypeExpr := mkApp (mkConst ``FreeGroup [toLevel.{u}]) (toTypeExpr α)
   toExpr g :=
     have eα : Q(Type $(toLevel.{u})) := toTypeExpr α
     let wordE : Q(List ($eα × Bool)) := toExpr g.toWord

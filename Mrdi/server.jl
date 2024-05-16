@@ -38,6 +38,7 @@ function kbmag()
     GAP.Packages.load("kbmag", install=true)
     input = IOBuffer(readline())
     g = load(input)
+    save("mrdi-files/fp_group", g)
     GAP.Globals.g = g
     generators = gens(g)
     GAP.Globals.generators = generators
@@ -163,6 +164,7 @@ function kbmag()
             push!(result, (equation_number, new_equation, 0,        0,        lhs, rhs))
         end
     end
+    save("mrdi-files/kbmag_result", result)
     save(stdout, result)
     # the next line is necessary cause we want to read a line in lean
     println("")

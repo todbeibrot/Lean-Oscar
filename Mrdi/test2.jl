@@ -24,8 +24,9 @@ F = free_group(2)
 (quot, proj) = quo(F, [f1^2, f2^2, comm(f1, f2)])
 rels = relators(quot)
 tuple = (1, true, z, q)
+F_one = one(F)
 
-file = "word_test"
-save("mrdi-files/$file.mrdi", word)
+file = "F_one"
+save("mrdi-files/$file.mrdi", F_one)
 x = load("mrdi-files/$file.mrdi")
 println(x)

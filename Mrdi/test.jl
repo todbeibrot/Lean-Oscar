@@ -24,12 +24,12 @@ using Oscar
 
 # rw system
 GAP.Packages.load("kbmag", install=true)
-# f = free_group(2)
-# rels = [comm(f[1], f[2]) / f[1], comm(f[2], f[1]) / f[2]]
-# g = quo(f, rels)[1]
-# save("test.mrdi", g)
-# g = load("test.mrdi")
 g = load("mrdi-files/fpgrouptest2.mrdi")
+f = free_group(2)
+rels = [comm(f[1], f[2]) / f[1], comm(f[2], f[1]) / f[2]]
+g = quo(f, rels)[1]
+save("test.mrdi", g)
+# g = load("test.mrdi")
 GAP.Globals.g = g
 generators = gens(g)
 GAP.Globals.generators = generators
@@ -155,4 +155,6 @@ for i in range(1 + 4 * length(generators), length=length(lines) ÷ 2 - 2 * lengt
         push!(result, (equation_number, new_equation, 0,        0,        lhs, rhs))
     end
 end
+
+println(result)
 save("kbmag.mrdi", result)

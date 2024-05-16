@@ -1,15 +1,19 @@
-{
+{   
+    "_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","0.13.0"],
+    "_type":"FPGroup",
     "data":{
         "X":{
             "relators":[["2","1","1","1","2","-1","1","-1","2","-1"],["1","1","2","1","1","-1","2","-1","1","-1"]],
             "freeGroup":"8c94a2f9-9434-b346-01a4-6873fe51e579",
             "GapType":"IsSubgroupFpGroup"}},
-    "_type":"FPGroup",
     "_refs":{
         "8c94a2f9-9434-b346-01a4-6873fe51e579":{
             "data":{
                 "wfilt":"IsLetterWordsFamily",
                 "names":["x1","x2"],
                 "GapType":"IsFreeGroup"},
-            "_type":"GAP.GapObj"}},
-    "_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","0.13.0"]}}
+            "_type":"GAP.GapObj"}}
+    }}
+
+
+    b a b- a- b-            a b a- b- a-
