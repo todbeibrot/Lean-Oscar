@@ -26,12 +26,20 @@ function perm_group_membership()
     g = l[1]
     gens = l[2:end]
     # check how to get the group correctly
-    G = permutation_group(5, gens)
+    G = permutation_group(degree(parent(g)), gens)
     epi = epimorphism_from_free_group(G)
-    g_free = preimage(epi, g)
-    save(stdout, g_free)
-    # the next line is necessary cause we want to read a line in lean
-    println("")
+    try
+        g_free = preimage(epi, g)
+        save(stdout, g_free)
+        # the next line is necessary cause we want to read a line in lean
+        println("")
+    catch e
+        if isa(e, AssertionError)
+            error("Didn't find a solution.")
+        else
+            rethrow(e)
+        end
+    end
 end
 
 function kbmag()

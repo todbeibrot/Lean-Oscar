@@ -25,8 +25,11 @@ F = free_group(2)
 rels = relators(quot)
 tuple = (1, true, z, q)
 F_one = one(F)
+permm = parent(perm)
+degreee = degree(permm)
+println(degreee)
 
-file = "F_one"
-save("mrdi-files/$file.mrdi", F_one)
-x = load("mrdi-files/$file.mrdi")
-println(x)
+# file = "permm"
+# save("mrdi-files/$file.mrdi", permm)
+# x = load("mrdi-files/$file.mrdi")
+# println(x)

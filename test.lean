@@ -17,8 +17,9 @@ def test_int : Int := by load_file "int"
 #echo test_int
 
 
-def x₂ : FreeGroup (Fin 2) := by load_file "free_group_word"
-#readMrdi FreeGroup (Fin 2) from "free_group_word"
+def x₂ : FreeGroup (Fin 4) := by load_file "free_group_word"
+#readMrdi FreeGroup (Fin 4) from "free_group_word"
+#print x₂
 -- #writeMrdi x₂ to "test"
 -- def x₃ : FreeGroup (Fin 2) := by load_file "test"
 
@@ -83,14 +84,14 @@ theorem x' : i = 42 := by
 #print test_int
 
 
+def d  : Equiv.Perm (Fin 5) := c[1, 2, 3, 4]
+def b0 : Equiv.Perm (Fin 5) := c[2, 1, 3]
+def b1 : Equiv.Perm (Fin 5) := c[1, 3, 4]
+def b2 : Equiv.Perm (Fin 5) := c[3, 2, 4]
+def b3 : Equiv.Perm (Fin 5) := c[3, 1, 4]
+def b4 : Equiv.Perm (Fin 5) := c[1, 2]
 
-def d : Equiv.Perm (Fin 5) := c[1, 2, 3, 4]
-def b1 : Equiv.Perm (Fin 5) := c[2, 1]
-def b2 : Equiv.Perm (Fin 5) := c[4, 3]
-def b3 : Equiv.Perm (Fin 5) := c[3, 2, 4, 1]
-def b4 : Equiv.Perm (Fin 5) := c[3, 1, 2]
-
-theorem test2 : d ∈ Group.closure {b1, b2, b3, b4} := by
+theorem test2 : d ∈ Group.closure {b0, b1, b2, b3, b4} := by
   perm_group_membership
 
 def tuple₁ : ℕ × Bool × ℤ × ℚ := ⟨1, true, 42, 1/3⟩
@@ -108,7 +109,28 @@ def rels_list := [a * b * a⁻¹ * b⁻¹ * a⁻¹, b * a * b⁻¹ * a⁻¹ * b�
 @[reducible]
 def rels := List.toSet rels_list
 
+namespace kbmag
+
+@[reducible]
+def f := FreeGroup (Fin 2)
+
+@[reducible]
+def a : f := FreeGroup.mk [(0, true)]
+@[reducible]
+def b : f := FreeGroup.mk [(1, true)]
+
+@[reducible]
+def rels_list := [a⁻¹ * b⁻¹ * a * b * a⁻¹, b⁻¹ * a⁻¹ * b * a * b⁻¹]
+@[reducible]
+def rels := List.toSet rels_list
+
 @[reducible]
 def g := PresentedGroup rels
 
---#writeMrdi (1 : PresentedGroup rels) to "fpgrouptest2"
+set_option maxRecDepth 10000000000000000000000
+set_option maxHeartbeats 1000000000000000000000
+
+def g_triv : ∀ (x : g), x = 1 := by
+  kbmag (1 : g)
+
+end kbmag
