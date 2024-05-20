@@ -4,8 +4,6 @@ import Mathlib.Tactic.ToExpr
 
 /- This file contains additional definitions and instances for `RBNode` which I need for the project. -/
 
--- TODO check what should be added to Mathlib
-
 section ToExprRBNode
 
 open Lean Json
