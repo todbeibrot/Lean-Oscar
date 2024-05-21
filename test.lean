@@ -5,6 +5,7 @@ import Std
 
 open Mrdi Lean Lean.Elab Command Term Lean.Elab.Tactic
 
+-- technically not necessary
 #start_server
 #start_server
 
@@ -21,11 +22,10 @@ def x₂ : FreeGroup (Fin 4) := by load_file "free_group_word"
 #readMrdi FreeGroup (Fin 4) from "free_group_word"
 #print x₂
 -- #writeMrdi x₂ to "test"
--- def x₃ : FreeGroup (Fin 2) := by load_file "test"
+def x₃ : FreeGroup (Fin 2) := by load_file "test"
 
--- theorem test1 : x₂ = x₃ := by rfl
---#eval x₂ doesn't work cause `Repr FreeGroup` is not implemented
---#echo x₂
+theorem test1 : x₂ = x₃ := by rfl
+#echo x₂
 
 
 def l : List (Fin 10) := by load_file "array"
@@ -40,7 +40,7 @@ def p : Equiv.Perm (Fin 5) := c[2, 3, 1]
 --#readMrdi Equiv.Perm (Fin 5) from "lean_perm"
 --#eval p
 --#eval p2
---#echo p doesn't work cause p and p2 are not def equal. They still evaluate to the same value.
+#echo p
 
 
 #readMrdi Array ℕ from "array"
@@ -50,7 +50,7 @@ def p : Equiv.Perm (Fin 5) := c[2, 3, 1]
 def A' : Matrix (Fin 3) (Fin 3) ℚ := !![3, 0, 4; 5, 10, 6; 1, 2, 3]
 #writeMrdi A' to "Matrix"
 def B : Matrix (Fin 3) (Fin 3) ℚ := by load_file "Matrix"
---#echo A doesn't work cause A and B are not def equal. They still evaluate to the same value.
+#echo A'
 #eval A'
 #eval B
 
@@ -84,6 +84,12 @@ theorem x' : i = 42 := by
 #print test_int
 
 
+def tuple₁ : ℕ × Bool × ℤ × ℚ := ⟨1, true, 42, 1/3⟩
+def tuple₂ : ℕ × Bool × ℤ × ℚ := by load_file "tuple"
+
+#eval tuple₂
+
+
 def d  : Equiv.Perm (Fin 5) := c[1, 2, 3, 4]
 def b0 : Equiv.Perm (Fin 5) := c[2, 1, 3]
 def b1 : Equiv.Perm (Fin 5) := c[1, 3, 4]
@@ -94,20 +100,6 @@ def b4 : Equiv.Perm (Fin 5) := c[1, 2]
 theorem test2 : d ∈ Group.closure {b0, b1, b2, b3, b4} := by
   perm_group_membership
 
-def tuple₁ : ℕ × Bool × ℤ × ℚ := ⟨1, true, 42, 1/3⟩
-def tuple₂ : ℕ × Bool × ℤ × ℚ := by load_file "tuple"
-
-#eval tuple₂
-
-@[reducible]
-def f := FreeGroup (Fin 2)
-
-def a : f := FreeGroup.mk [(1, true)]
-def b : f := FreeGroup.mk [(2, true)]
-
-def rels_list := [a * b * a⁻¹ * b⁻¹ * a⁻¹, b * a * b⁻¹ * a⁻¹ * b⁻¹]
-@[reducible]
-def rels := List.toSet rels_list
 
 namespace kbmag
 

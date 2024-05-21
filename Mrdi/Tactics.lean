@@ -33,6 +33,7 @@ private def matrixType (u) (x : Q(Type $u)) : MetaM (Q(Type u) × Q(ℕ) × Q(�
   | ~q(((Matrix (Fin ($m + 1)) (Fin ($n + 1)))) $α) => return (q($α), q($m) ,q($n))
   | _ => throwError "input didn't match expected type"
 
+/-- Same as `matrix_inverse` with more details -/
 def matrix_inverse' (A : Expr) (goal : MVarId) : TacticM Unit := do
   let tA ← inferType A
   let .sort u ← instantiateMVars (← whnf (← inferType tA)) | unreachable!
@@ -159,6 +160,7 @@ elab_rules : tactic
 
 end Permutation
 
+
 section KBMAG
 
 theorem aux {α : Type u} (x : α) :
@@ -174,7 +176,7 @@ theorem start_equations_inv {α : Type u} (rels : Set (FreeGroup α)) (x : α) :
     sorry
 
 @[reducible]
-private def mk {α : Type u} (rels : Set (FreeGroup α)) (l : List (α × Bool)) :=
+def PresentedGroup.mk {α : Type u} (rels : Set (FreeGroup α)) (l : List (α × Bool)) :=
   @QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk l)
 
 /-- The end of l₁ which is the same as the start of l₂. -/
@@ -204,24 +206,28 @@ let rec aux (l₁ l₂ : List α) :=
   | a :: as, b :: bs => if a = b then aux as bs else b :: bs
 aux l₁.reverse l₂
 
+/-- New equations constructed by overlapping h1 and h2 -/
 theorem eq {α : Type u} [DecidableEq α] {l₁ l₂ l₃ : List (α × Bool)} {rels : Set (FreeGroup α)}
-  (h₁ : mk rels l₁ = mk rels l₂)
-  (h₂ : mk rels l₃ = 1) :
-    mk rels (cut l₂ l₃ ++ overlap l₂ l₃ ++ cut' l₁ l₃) = mk rels (cut l₁ l₃) := by
+  (h₁ : PresentedGroup.mk rels l₁ = PresentedGroup.mk rels l₂)
+  (h₂ : PresentedGroup.mk rels l₃ = 1) :
+    PresentedGroup.mk rels (cut l₂ l₃ ++ overlap l₂ l₃ ++ cut' l₁ l₃) = PresentedGroup.mk rels (cut l₁ l₃) := by
       sorry
 
+/-- New equations constructed by overlapping h1 and h2 -/
 theorem eq' {α : Type u} [DecidableEq α] {l₁ l₃ l₄ : List (α × Bool)} {rels : Set (FreeGroup α)}
-  (h₁ : mk rels l₁ = 1)
-  (h₂ : mk rels l₃ = mk rels l₄) :
-    mk rels (cut l₁ l₃ ++ overlap l₁ l₄ ++ cut' l₁ l₄) = mk rels (cut' l₁ l₃) := by
+  (h₁ : PresentedGroup.mk rels l₁ = 1)
+  (h₂ : PresentedGroup.mk rels l₃ = PresentedGroup.mk rels l₄) :
+    PresentedGroup.mk rels (cut l₁ l₃ ++ overlap l₁ l₄ ++ cut' l₁ l₄) = PresentedGroup.mk rels (cut' l₁ l₃) := by
       sorry
 
+/-- The relations are in the kern -/
 theorem lift_rels {α : Type u} {l : List (α × Bool)} {rels : Set (FreeGroup α)}
   (h : FreeGroup.mk l ∈ rels) :
     (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk l)) = 1 := by
       rw [QuotientGroup.eq_one_iff]
       exact Subgroup.subset_normalClosure h
 
+/-- Cancels the first element if it is the same on both sides -/
 theorem left_cancel_iff {α : Type u} {a : α × Bool} {l₁ l₂ : List (α × Bool)} {rels : Set (FreeGroup α)} :
       (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk (a :: l₁)) =
         @QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk (a :: l₂))) ↔
@@ -231,9 +237,10 @@ theorem left_cancel_iff {α : Type u} {a : α × Bool} {l₁ l₂ : List (α × 
                     QuotientGroup.mk_mul, QuotientGroup.mk_mul]
               rw [mul_left_cancel_iff]
 
+/-- Makes sure the simpler argument is on the left side of the equation -/
 theorem maybe_symm {α : Type u} [DecidableEq α] {l₁ l₂ : List (α × Bool)} {rels : Set (FreeGroup α)}
   (_ : l₂.length < l₁.length) :
-    mk rels l₁ = mk rels l₂ ↔ mk rels l₂ = mk rels l₁ := by
+    PresentedGroup.mk rels l₁ = PresentedGroup.mk rels l₂ ↔ PresentedGroup.mk rels l₂ = PresentedGroup.mk rels l₁ := by
       constructor
       · intro h
         exact h.symm
@@ -241,27 +248,26 @@ theorem maybe_symm {α : Type u} [DecidableEq α] {l₁ l₂ : List (α × Bool)
         exact h.symm
 
 theorem replace_all {α : Type u} [DecidableEq α] {l₁ l₂ : List (α × Bool)} {rels : Set (FreeGroup α)} {a b : α × Bool}
-  (h : mk rels [a] = mk rels [b]) :
-    mk rels l₁ = mk rels l₂ ↔ mk rels (List.map (fun x => if x = a then b else x) l₁) =
-      mk rels (List.map (fun x => if x = a then b else x) l₂) := by
+  (h : PresentedGroup.mk rels [a] = PresentedGroup.mk rels [b]) :
+    PresentedGroup.mk rels l₁ = PresentedGroup.mk rels l₂ ↔ PresentedGroup.mk rels (List.map (fun x => if x = a then b else x) l₁) =
+      PresentedGroup.mk rels (List.map (fun x => if x = a then b else x) l₂) := by
         sorry
 
 theorem replace_all' {α : Type u} [DecidableEq α] {l₁ : List (α × Bool)} {rels : Set (FreeGroup α)} {a b : α × Bool}
-  (h : mk rels [a] = mk rels [b]) :
-    mk rels l₁ = 1 ↔ mk rels (List.map (fun x => if x = a then b else x) l₁) = 1 := by
+  (h : PresentedGroup.mk rels [a] = PresentedGroup.mk rels [b]) :
+    PresentedGroup.mk rels l₁ = 1 ↔ PresentedGroup.mk rels (List.map (fun x => if x = a then b else x) l₁) = 1 := by
         sorry
 
 theorem replace_all'' {α : Type u} [DecidableEq α] {l₁ l₂ : List (α × Bool)} {rels : Set (FreeGroup α)} {a : α × Bool}
-  (h : mk rels [a] = 1) :
-    mk rels l₁ = mk rels l₂ ↔ mk rels (List.filter (fun x => x ≠ a) l₁) =
-      mk rels (List.filter (fun x => x ≠ a) l₂) := by
+  (h : PresentedGroup.mk rels [a] = 1) :
+    PresentedGroup.mk rels l₁ = PresentedGroup.mk rels l₂ ↔ PresentedGroup.mk rels (List.filter (fun x => x ≠ a) l₁) =
+      PresentedGroup.mk rels (List.filter (fun x => x ≠ a) l₂) := by
         sorry
 
 theorem replace_all''' {α : Type u} [DecidableEq α] {l₁ : List (α × Bool)} {rels : Set (FreeGroup α)} {a : α × Bool}
-  (h : mk rels [a] = 1) :
-    mk rels l₁ = 1 ↔ mk rels (List.filter (fun x => x ≠ a) l₁) = 1 := by
+  (h : PresentedGroup.mk rels [a] = 1) :
+    PresentedGroup.mk rels l₁ = 1 ↔ PresentedGroup.mk rels (List.filter (fun x => x ≠ a) l₁) = 1 := by
         sorry
-
 
 def reverse {α : Type u} (rels : Set (FreeGroup α)) (l : List (α × Bool)) :=
     @QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk l.reverse)
@@ -308,28 +314,19 @@ private def fpgroupRels (n : Q(ℕ))
         return rels
     | _ => throwError "input didn't match expected type"
 
-private def fp_group_group (n : Q(ℕ)) (rels : Q(List (FreeGroup (Fin $n))))
-  (G : Q(PresentedGroup (List.toSet $rels))) :
-  MetaM Q(PresentedGroup (List.toSet $rels)) := do
-    return q($G)
-
 open Lean.Parser.Tactic
 open Lean.Syntax
 
-def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
+def kbmag_equations (g : Expr) (goal : MVarId) : TacticM MVarId := do
   let mut goal := goal
   let ⟨u, G, g⟩ ← inferTypeQ g
 
   let n ← fingroupType u G
   let n' : ℕ ← unsafe evalExpr ℕ q(ℕ) n
   let rels ← fpgroupRels n u G
-  -- let n_relsE := q(List.length $rels)
-  -- let n_rels ← unsafe evalExpr ℕ q(ℕ) n_relsE
   let rels_stx ← Term.exprToSyntax rels
 
   let equationsE : Q(List $ ℕ × Bool × ℕ × ℕ × (FreeGroup (Fin $n)) × (FreeGroup (Fin $n))) ← julia' "kbmag" g q(List $ ℕ × Bool × ℕ × ℕ × (FreeGroup (Fin $n)) × (FreeGroup (Fin $n)))
-  --logInfo equationsE
-  -- let mut proofs : List MVarId := []
   let equations ← unsafe evalExpr (List $ ℕ × Bool × ℕ × ℕ × (FreeGroup (Fin n')) × (FreeGroup (Fin n')))
     q(List $ ℕ × Bool × ℕ × ℕ × (FreeGroup (Fin $n)) × (FreeGroup (Fin $n))) equationsE
 
@@ -354,6 +351,7 @@ def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
       let (new_goal, _) ← Elab.runTactic goal tacticCode
       replaceMainGoal new_goal
       return new_goal[0]!
+
   for i in List.range equations.length do
     let i' : Q(ℕ) := toExpr i
     let equationE : Q(FreeGroup (Fin «$n») × FreeGroup (Fin «$n»)) ← whnf q($equationsE[$i']!.2.2.2.2)
@@ -362,10 +360,9 @@ def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
     let rhs : Q(FreeGroup (Fin «$n»)) := q($equationE.2)
     let lifted_rhs := q((QuotientGroup.mk (s := Subgroup.normalClosure (List.toSet «$rels»)) $rhs))
     let lifted_equation : Expr := q($lifted_lhs = $lifted_rhs)
-
-
     let ⟨equation_number, new_equation, overlap₁, overlap₂, _, _⟩ := equations[i]!
     if new_equation then do
+      -- new equations
       goal ← goal.withContext do
         let ident : Ident := h equation_number
         let loc ← `(location| at $ident:term)
@@ -406,6 +403,7 @@ def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
         return goal'
       replaceMainGoal [goal]
     else do
+      -- relations
       goal ← goal.withContext do
         Term.synthesizeSyntheticMVars false
         let lifted_equation ← instantiateMVars lifted_equation
@@ -429,6 +427,10 @@ def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
         let (new_goal, _) ← Elab.runTactic goal tacticCode
         replaceMainGoal new_goal
         return new_goal[0]!
+  return goal
+
+def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
+  let goal ← kbmag_equations g goal
   let x := mkIdent (Name.str .anonymous "x")
   let z := mkIdent (Name.str .anonymous "z")
   let tacticCode ← `(tactic|
@@ -445,9 +447,6 @@ def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
     let (new_goals', _) ← Elab.runTactic goal' tacticCode
     all_goals := all_goals ++ new_goals'
   replaceMainGoal all_goals
-  return
-
-
 
 syntax "kbmag " term : tactic
 elab_rules : tactic
@@ -456,139 +455,6 @@ elab_rules : tactic
     let goal ← getMainGoal
     kbmag g goal
 
-
-
 end KBMAG
 
 end Mrdi.Tactic
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#eval 2
-
-def new_overlap [DecidableEq α] : List α → List α → List α
-| [], l => l
-| _, [] => []
-| a :: l₁, b :: l₂ => if a = b then new_overlap l₁ l₂ else b :: l₂
-
-def new_overlap' [DecidableEq α] : List α → List α → List α
-| [], _ => []
-| l, [] => l
-| a :: l₁, b :: l₂ => if a = b then new_overlap' l₁ l₂ else a :: l₁
-
-private def mk {α : Type u} (rels : Set (FreeGroup α)) (l : List (α × Bool)) :=
-  @QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk l)
-
-def new_equation_type {α : Type u} [DecidableEq α] {l₁ l₂ l₃ l₄ : List (α × Bool)} {rels : Set (FreeGroup α)}
-  (_ : mk rels l₁ = mk rels l₂)
-  (_ : mk rels l₃ = mk rels l₄) :=
-    mk rels ((new_overlap' l₁.reverse l₃).reverse ++ l₄) = mk rels (l₂ ++ new_overlap l₁.reverse l₃)
-
-theorem new_equation {α : Type u} [DecidableEq α] {l₁ l₂ l₃ l₄ : List (α × Bool)} {rels : Set (FreeGroup α)}
-  (h₁ : mk rels l₁ = mk rels l₂)
-  (_ : mk rels l₃ = mk rels l₄) :
-    mk rels (l₁ ++ new_overlap l₁.reverse l₃) = mk rels (l₂ ++ new_overlap l₁.reverse l₃) := by
-      simp only [mk, ← FreeGroup.mul_mk] at h₁
-      simp only [mk, ← FreeGroup.mul_mk, h₁, QuotientGroup.mk_mul]
-
-theorem new_equation' {α : Type u} [DecidableEq α] {l₁ l₂ l₃ l₄ : List (α × Bool)} {rels : Set (FreeGroup α)}
-  (h₁ : mk rels l₁ = mk rels l₂)
-  (h₂ : mk rels l₃ = mk rels l₄) :
-    mk rels ((new_overlap' l₁.reverse l₃).reverse ++ l₄) = mk rels (l₂ ++ new_overlap l₁.reverse l₃) := by
-      simp only [mk, ← FreeGroup.mul_mk] at h₁ h₂
-      simp only [mk, ← FreeGroup.mul_mk, ← h₁, ← h₂, QuotientGroup.mk_mul, new_overlap', new_overlap]
-      clear h₁ h₂
-      induction l₁ with
-      | nil => simp [new_overlap, new_overlap']
-      | cons a l h =>
-          simp
-          sorry
-
-/-- The end of l₁ which is the same as the start of l₂. -/
-def overlap [DecidableEq α] (l₁ l₂ : List α) : List α :=
-match l₁.reverse, l₂ with
-| [], _ => []
-| _, [] => []
-| a :: as, b :: bs => if a = b then a :: overlap as bs else []
-
-/-- l₁ but deleting the overlap with l₂. -/
-def cut [DecidableEq α] (l₁ l₂ : List α) : List α :=
-let l := match l₁.reverse, l₂ with
-| [], _ => []
-| l, [] => l
-| a :: as, b :: bs => if a = b then cut as bs else a :: as
-l.reverse
-
-/-- l₂ but deleting the overlap with l₁. -/
-def cut' [DecidableEq α] (l₁ l₂ : List α) : List α :=
-let l := match l₁.reverse, l₂ with
-| [], l => l
-| _, [] => []
-| a :: as, b :: bs => if a = b then cut' as bs else b :: bs
-l.reverse
-
-theorem eq {α : Type u} [DecidableEq α] {l₁ l₂ l₃ : List (α × Bool)} {rels : Set (FreeGroup α)}
-  (h₁ : mk rels l₁ = mk rels l₂)
-  (h₂ : mk rels l₃ = 1) :
-    mk rels (cut l₂ l₃ ++ overlap l₂ l₃ ++ cut' l₁ l₃) = mk rels (cut l₁ l₃) := by
-      sorry
-
-theorem eq' {α : Type u} [DecidableEq α] {l₁ l₃ l₄ : List (α × Bool)} {rels : Set (FreeGroup α)}
-  (h₁ : mk rels l₁ = 1)
-  (h₂ : mk rels l₃ = mk rels l₄) :
-    mk rels (cut l₁ l₄ ++ overlap l₁ l₄ ++ cut' l₁ l₃) = mk rels (cut' l₁ l₃) := by
-      sorry
-
-
-theorem maybe_symm {α : Type u} [DecidableEq α] {l₁ l₂ : List (α × Bool)} {rels : Set (FreeGroup α)}
-  (_ : l₁.length < l₂.length) :
-    mk rels l₁ = mk rels l₂ ↔ mk rels l₂ = mk rels l₁ := by
-      constructor
-      · intro h
-        exact h.symm
-      · intro h
-        exact h.symm
-
-theorem cancel_left {α : Type u} {a : α × Bool} {l₁ l₂ : List (α × Bool)} {rels : Set (FreeGroup α)}
-  (h : (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk l₁)) =
-    (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk l₂))) :
-      @QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk (a :: l₁)) =
-        @QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk (a :: l₂)) := by
-          rw [← List.singleton_append (l := l₁), ← FreeGroup.mul_mk, ← List.singleton_append (l := l₂), ← FreeGroup.mul_mk,
-            QuotientGroup.mk_mul, QuotientGroup.mk_mul, h]
-
-theorem old_revert {α : Type u} {l₁ l₂ : List (α × Bool)} {rels : Set (FreeGroup α)}
-  (h : @QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk l₁.reverse) =
-    @QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk l₂.reverse)) :
-      (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk l₁)) =
-        (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk l₂)) := by
-          sorry
-
-theorem aux {α : Type u} (x : α) :
-  FreeGroup.mk [(x, true), (x, false)] = 1 := by
-    sorry
-
-theorem start_equations {α : Type u} {rels : Set (FreeGroup α)} (x : α) :
-  (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk [(x, true), (x, false)])) = 1 := by
-    simp [aux]
-
-theorem start_equations_inv {α : Type u} {rels : Set (FreeGroup α)} (x : α) :
-  (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk [(x, false), (x, true)])) = 1 := by
-    sorry
-
-theorem FreeGroup.inv_self_word : FreeGroup.mk ((x, false) :: (x, true) :: l) =  FreeGroup.mk l := by sorry
-theorem FreeGroup.self_inv_word : FreeGroup.mk ((x, true) :: (x, false) :: l) =  FreeGroup.mk l := by sorry
