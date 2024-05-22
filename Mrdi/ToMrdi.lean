@@ -385,10 +385,11 @@ instance [FinEnum α] : ToData $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalC
 instance [Fintype α] : ToRefs $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
   toRefs uuids _ := return mkRefs [(uuids[0]!, ← (GAPFreeGroupRef α).toRef uuids (default : FreeGroup α))]
 
-/- TODO delete this instance. it's for debugging -/
+/- TODO delete this instance. it's for debugging. -/
 instance [FinEnum α] : ToMrdi $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
   toMrdi uuids g := toMrdi (α := TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels)) uuids (get_t g)
 
+/- TODO delete this instance. it's for debugging -/
 instance [FinEnum α] {rels : List (FreeGroup α)} : ToMrdi $ PresentedGroup (List.toSet rels) where
   toMrdi uuids g := toMrdi (α := FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels)) uuids g
 

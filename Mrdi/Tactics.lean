@@ -163,6 +163,8 @@ end Permutation
 
 section KBMAG
 
+def _root_.Group.isTrivial (G : Type) [Group G] := ∀x : G, x = 1
+
 theorem aux {α : Type u} (x : α) :
   FreeGroup.mk [(x, true), (x, false)] = 1 := by
     sorry
@@ -288,7 +290,7 @@ theorem FreeGroup.inv_self_word : FreeGroup.mk ((x, false) :: (x, true) :: l) = 
 theorem FreeGroup.self_inv_word : FreeGroup.mk ((x, true) :: (x, false) :: l) =  FreeGroup.mk l := by sorry
 
 theorem PresentedGroup.induction_on {α : Type u_1} {rels : Set (FreeGroup α)} {C : PresentedGroup rels → Prop}
-  (x : PresentedGroup rels) (H : ∀ (z : α), C (PresentedGroup.of z)) :
+  (x : PresentedGroup rels) (H : ∀ z : α, C (PresentedGroup.of z)) :
     C x := by
       sorry --QuotientGroup.induction_on
 
@@ -370,7 +372,7 @@ def kbmag_equations (g : Expr) (goal : MVarId) : TacticM MVarId := do
         let tacticCode ←  `(tactic|
           (try have $ident := (eq  $(h overlap₁) $(h overlap₂)));
           (try have $ident := (eq' $(h overlap₁) $(h overlap₂)));
-          (try simp [Mrdi.Tactic.mk, overlap, cut, cut', overlap.aux, cut.aux, cut'.aux, FreeGroup.invRev] $loc);
+          (try simp [PresentedGroup.mk, overlap, cut, cut', overlap.aux, cut.aux, cut'.aux, FreeGroup.invRev] $loc);
           (repeat
             (simp [*, -QuotientGroup.eq_one_iff] $loc);
             (try simp only [FreeGroup.self_inv_word, FreeGroup.inv_self_word] $loc);
@@ -429,13 +431,12 @@ def kbmag_equations (g : Expr) (goal : MVarId) : TacticM MVarId := do
         return new_goal[0]!
   return goal
 
-def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
-  let goal ← kbmag_equations g goal
+def finish_isTrivial (goal : MVarId) : TacticM Unit := do
   let x := mkIdent (Name.str .anonymous "x")
   let z := mkIdent (Name.str .anonymous "z")
   let tacticCode ← `(tactic|
     (intro $x:term);
-    (apply PresentedGroup.induction_on (x := $x));
+    (apply PresentedGroup.induction_on $x);
     (intro $z:term);
     (unfold PresentedGroup.of FreeGroup.of);
     (fin_cases $z:term)
@@ -447,6 +448,17 @@ def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
     let (new_goals', _) ← Elab.runTactic goal' tacticCode
     all_goals := all_goals ++ new_goals'
   replaceMainGoal all_goals
+
+def finish_equation (goal : MVarId) : TacticM Unit := do
+  let tacticCode ← `(tactic| simp[*, PresentedGroup.of, FreeGroup.of])
+  let (new_goals, _) ← Elab.runTactic goal tacticCode
+  replaceMainGoal new_goals
+
+def kbmag (g : Expr) (goal : MVarId) : TacticM Unit := do
+  let t ← goal.getType
+  let goal ← kbmag_equations g goal
+  let some (_, _, _) := t.eq? | finish_isTrivial goal
+  finish_equation goal
 
 syntax "kbmag " term : tactic
 elab_rules : tactic

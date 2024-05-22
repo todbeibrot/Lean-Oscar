@@ -103,6 +103,8 @@ theorem test2 : d ∈ Group.closure {b0, b1, b2, b3, b4} := by
 
 namespace kbmag
 
+open Mrdi.Tactic
+
 @[reducible]
 def f := FreeGroup (Fin 2)
 
@@ -122,7 +124,13 @@ def g := PresentedGroup rels
 set_option maxRecDepth 10000000000000000000000
 set_option maxHeartbeats 1000000000000000000000
 
-def g_triv : ∀ (x : g), x = 1 := by
+theorem g_triv : ∀ (x : g), x = 1 := by
+  kbmag (1 : g)
+
+theorem g_triv' : Group.isTrivial g := by
+  kbmag (1 : g)
+
+theorem a_eq_b : (PresentedGroup.of 0 : g) = (PresentedGroup.of 1 : g) := by
   kbmag (1 : g)
 
 end kbmag
