@@ -48,7 +48,7 @@ def p : Equiv.Perm (Fin 5) := c[2, 3, 1]
 #readMrdi Int from "int"
 
 def A' : Matrix (Fin 3) (Fin 3) ℚ := !![3, 0, 4; 5, 10, 6; 1, 2, 3]
-#writeMrdi A' to "Matrix"
+--#writeMrdi A' to "Matrix"
 def B : Matrix (Fin 3) (Fin 3) ℚ := by load_file "Matrix"
 #echo A'
 #eval A'
