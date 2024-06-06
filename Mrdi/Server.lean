@@ -16,7 +16,7 @@ initialize juliaPath : FilePath ← do
   return ((← currentDir).join ⟨"Mrdi"⟩).join ⟨"julia.sh"⟩
 
 private def childSpawnArgs : SpawnArgs :=
-  { cmd := #[juliaPath.toString], args := #[serverPath.toString], stdin := .piped, stdout := .piped, stderr := .piped }
+  { cmd := juliaPath.toString, args := #[serverPath.toString], stdin := .piped, stdout := .piped, stderr := .piped }
 
 initialize juliaAccess : Std.Tactic.Cache (Child childSpawnArgs.toStdioConfig) ← Std.Tactic.Cache.mk (spawn childSpawnArgs)
 
