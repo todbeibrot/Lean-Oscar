@@ -9,11 +9,11 @@ open Lean Meta Mrdi Json IO Process System Qq MrdiFile
 
 initialize serverPath : FilePath ← do
   if System.Platform.isWindows then
-    return ((← currentDir).join ⟨"Mrdi"⟩).join ⟨"windows_test_server.jl"⟩
-  return ((← currentDir).join ⟨"Mrdi"⟩).join ⟨"server.jl"⟩
+    return ((← currentDir).join ⟨"Oscar"⟩).join ⟨"windows_test_server.jl"⟩
+  return ((← currentDir).join ⟨"Oscar"⟩).join ⟨"server.jl"⟩
 
 initialize juliaPath : FilePath ← do
-  return ((← currentDir).join ⟨"Mrdi"⟩).join ⟨"julia.sh"⟩
+  return ((← currentDir).join ⟨"Oscar"⟩).join ⟨"julia.sh"⟩
 
 private def childSpawnArgs : SpawnArgs :=
   { cmd := juliaPath.toString, args := #[serverPath.toString], stdin := .piped, stdout := .piped, stderr := .piped }

@@ -2,7 +2,7 @@ import Mathlib
 import Mrdi.Basic
 import Mrdi.Stream
 import Mrdi.ToExpr
-import Mrdi.Server
+import Oscar.Server
 import Mrdi.ToMrdiNoncomputable
 import Mrdi.ListToSet
 import Std

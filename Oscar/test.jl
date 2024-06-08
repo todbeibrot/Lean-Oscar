@@ -1,5 +1,8 @@
 using Oscar
 
+# This is my workspace for trying out Oscar related things, in particular saving objects.
+# Only used for testing. Nothing important to find here.
+
 F = free_group(2)
 (a, b) = gens(F)
 str = "a * b * a^-1 * b^-1"
@@ -25,11 +28,8 @@ F = free_group(2)
 rels = relators(quot)
 tuple = (1, true, z, q)
 F_one = one(F)
-permm = parent(perm)
-degreee = degree(permm)
-println(degreee)
 
-# file = "permm"
-# save("mrdi-files/$file.mrdi", permm)
-# x = load("mrdi-files/$file.mrdi")
-# println(x)
+file = "matrix"
+save("mrdi-files/$file.mrdi", matrix)
+x = load("mrdi-files/$file.mrdi")
+println(x)

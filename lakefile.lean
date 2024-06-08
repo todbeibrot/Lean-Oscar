@@ -1,7 +1,7 @@
 import Lake
 open Lake DSL
 
-package «mrdi» {
+package «oscar» {
   -- add any package configuration options here
 }
 
@@ -10,5 +10,10 @@ require mathlib from git
 
 @[default_target]
 lean_lib «Mrdi» {
+  -- add any library configuration options here
+}
+
+@[default_target]
+lean_lib «Oscar» {
   -- add any library configuration options here
 }
