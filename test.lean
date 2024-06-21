@@ -80,6 +80,33 @@ example : g ∈ Group.closure {g₀, g₁, g₂, g₃} := by
 
 end perm_group_membership2
 
+namespace rubiks_cube
+
+-- From the example https://www.gap-system.org/Doc/Examples/rubik.html.
+-- All 6 permutations correspond to the rotation of the Rubik's cube around a face of the cube.
+
+def top    : Equiv.Perm (Fin 48) := c[ 0,  2,  7,  5] * c[ 1,  4,  6,  3] * c[ 8, 32, 24, 16] * c[ 9, 33, 25, 17] * c[10, 34, 26, 18]
+def left   : Equiv.Perm (Fin 48) := c[ 8, 10, 15, 13] * c[ 9, 12, 14, 11] * c[ 0, 16, 40, 39] * c[ 3, 19, 43, 36] * c[ 5, 21, 45, 34]
+def front  : Equiv.Perm (Fin 48) := c[16, 18, 23, 21] * c[17, 20, 22, 19] * c[ 5, 24, 42, 15] * c[ 6, 27, 41, 12] * c[ 7, 29, 40, 10]
+def right  : Equiv.Perm (Fin 48) := c[24, 26, 31, 29] * c[25, 28, 30, 27] * c[ 2, 37, 42, 18] * c[ 4, 35, 44, 20] * c[ 7, 32, 47, 23]
+def rear   : Equiv.Perm (Fin 48) := c[32, 34, 39, 37] * c[33, 36, 38, 35] * c[ 2,  8, 45, 31] * c[ 1, 11, 46, 28] * c[ 0, 13, 47, 26]
+def bottom : Equiv.Perm (Fin 48) := c[40, 42, 47, 45] * c[41, 44, 46, 43] * c[13, 21, 29, 37] * c[14, 22, 30, 38] * c[15, 23, 31, 39]
+
+-- Together, they generate the group of transformations of Rubik's magic cube
+def G := Group.closure {top, left, front, right, rear, bottom}
+
+def g : Equiv.Perm (Fin 48) := c[16, 18] * c[10, 7] * c[5, 24] * c[6, 27] * c[17, 20]
+
+set_option maxRecDepth 10000000000000000000000
+set_option maxHeartbeats 1000000000000000000000
+
+-- Takes a few minutes
+theorem g_in_G : g ∈ G := by
+  unfold G
+  perm_group_membership
+
+end rubiks_cube
+
 
 namespace kbmag
 

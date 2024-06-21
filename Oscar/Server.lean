@@ -8,8 +8,6 @@ namespace Mrdi.Server
 open Lean Meta Mrdi Json IO Process System Qq MrdiFile
 
 initialize serverPath : FilePath ← do
-  if System.Platform.isWindows then
-    return ((← currentDir).join ⟨"Oscar"⟩).join ⟨"windows_test_server.jl"⟩
   return ((← currentDir).join ⟨"Oscar"⟩).join ⟨"server.jl"⟩
 
 initialize juliaPath : FilePath ← do
