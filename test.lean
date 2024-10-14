@@ -1,9 +1,5 @@
 import Oscar
 import Mathlib
-import Std
-
-
-open Mrdi Lean Lean.Elab Command Term Lean.Elab.Tactic
 
 -- Technically not necessary. The server will start the first time it is used.
 #start_server
@@ -95,10 +91,10 @@ def bottom : Equiv.Perm (Fin 48) := c[40, 42, 47, 45] * c[41, 44, 46, 43] * c[13
 -- Together, they generate the group of transformations of Rubik's magic cube
 def G := Group.closure {top, left, front, right, rear, bottom}
 
-def g : Equiv.Perm (Fin 48) := c[16, 18] * c[10, 7] * c[5, 24] * c[6, 27] * c[17, 20]
-
-set_option maxRecDepth 10000000000000000000000
+set_option maxRecDepth   10000000000000000000000
 set_option maxHeartbeats 1000000000000000000000
+
+def g : Equiv.Perm (Fin 48) := c[16, 18] * c[10, 7] * c[5, 24] * c[6, 27] * c[17, 20]
 
 -- Takes a few minutes
 theorem g_in_G : g ∈ G := by
@@ -129,7 +125,7 @@ def rels := List.toSet rels_list
 @[reducible]
 def g := PresentedGroup rels
 
-set_option maxRecDepth 10000000000000000000000
+set_option maxRecDepth   1000000000000000000000
 set_option maxHeartbeats 1000000000000000000000
 
 theorem g_triv : ∀ (x : g), x = 1 := by
