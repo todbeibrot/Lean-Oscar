@@ -1,1 +1,0 @@
-{"data":["1","1","1","1","1","1","2","-1","1","-1","2","1","1","-1"],"_type":{"params":"5d60a1cc-66fe-41ab-5cbb-22fad61ef8fc","name":"FPGroupElem"},"_refs":{"5d60a1cc-66fe-41ab-5cbb-22fad61ef8fc":{"data":{"X":{"wfilt":"IsLetterWordsFamily","names":["x1","x2"],"GapType":"IsFreeGroup"}},"_type":"FPGroup"}},"_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","0.13.0"]}}

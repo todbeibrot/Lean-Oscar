@@ -1,1 +1,0 @@
-{"_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","0.13.0"]},"_type":"String","data":""{\"ref\": null,\n \"data\": \"4\",\n \"_type\": {\"params\": null, \"name\": \"Base.Int\"},\n \"_ns\": {\"Oscar\": [\"https://github.com/oscar-system/Oscar.jl\", \"0.13.0\"]}}""}

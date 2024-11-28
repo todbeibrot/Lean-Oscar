@@ -1,1 +1,0 @@
-{"data":["1","0"],"_type":{"params":"83225c54-fa34-1493-9542-e9ea79e59435","name":"PermGroupElem"},"_refs":{"83225c54-fa34-1493-9542-e9ea79e59435":{"data":{"gens":[["2","3","4","5","1"],["2","1"]],"degree":"2"},"_type":"PermGroup"}},"_ns":{"Oscar":["https://github.com/oscar-system/Oscar.jl","0.13.0"]}}
