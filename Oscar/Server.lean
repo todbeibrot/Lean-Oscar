@@ -7,17 +7,6 @@ namespace Mrdi.Server
 
 open Lean Meta Mrdi Json IO Process System Qq MrdiFile
 
-def windowsToLinuxPath (winPath : String) : String :=
-  -- Assuming paths are like "C:\\Users\\Name\\file.txt"
-  let linuxPath := winPath.replace "\\" "/" -- Replace backslashes with slashes
-  if linuxPath.length >= 2 && linuxPath.get ⟨1⟩ == ':' then
-    -- Convert "C:/path" to "/mnt/c/path"
-    let drive := linuxPath.take 1
-    let rest := linuxPath.drop 2
-    "/mnt/" ++ drive.toLower ++ rest
-  else
-    linuxPath -- Return unchanged if no conversion is needed
-
 initialize serverPath : FilePath ← do
   return ((← currentDir).join ⟨"Oscar"⟩).join ⟨"server.jl"⟩
 
@@ -25,7 +14,7 @@ initialize juliaPath : FilePath ← do
   return ((← currentDir).join ⟨"Oscar"⟩).join ⟨"julia.sh"⟩
 
 private def childSpawnArgs : SpawnArgs :=
-  { cmd := s!"wsl bash -ic", args := #[s!"{windowsToLinuxPath juliaPath.toString} '{windowsToLinuxPath serverPath.toString}'"], stdin := .piped, stdout := .piped, stderr := .piped }
+  { cmd := juliaPath.toString, args := #[serverPath.toString], stdin := .piped, stdout := .piped, stderr := .piped }
 
 initialize juliaAccess : Std.Tactic.Cache (Child childSpawnArgs.toStdioConfig) ← Std.Tactic.Cache.mk (spawn childSpawnArgs)
 
