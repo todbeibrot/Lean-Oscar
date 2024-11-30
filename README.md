@@ -20,7 +20,7 @@ cd Lean-Oscar
 
 Build the project:
 ```bash
-lean exe cache get
+lake exe cache get
 ```
 
 and
