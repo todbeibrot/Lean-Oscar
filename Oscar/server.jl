@@ -1,3 +1,4 @@
+import Pkg; Pkg.activate("."); Pkg.instantiate()
 using Oscar
 
 function echo()
