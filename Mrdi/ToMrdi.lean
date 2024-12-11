@@ -46,6 +46,14 @@ inductive GAPWrapper
 -- TODO delete?
 def Unwrap : TypeWrapper α → Type u := fun _ => α
 
+def changeWrapper {α} : TypeWrapper α → GAPWrapper α
+  | .get_t a => .get_t a
+  | _ => .dummy
+
+def changeWrapper' {α} : GAPWrapper α → TypeWrapper α
+  | .get_t a => .get_t a
+  | _ => .dummy
+
 /-- Encapsules data of type `α` -/
 class ToData where
   toData : List UUID → α → MetaM Mrdi.Data
@@ -98,6 +106,9 @@ instance [ToRef α] [Inhabited α] : ToMrdi $ GAPWrapper α where
 
 instance [ToMrdi $ GAPWrapper α] : ToRef α where
   toRef uuids a := toMrdi uuids (GAPWrapper.get_t a)
+
+instance : ToMrdiType $ GAPWrapper $ α where
+  toMrdiType _ _ := return MrdiType.str "GapObj"
 
 end Basic
 
@@ -329,7 +340,7 @@ instance [Fintype α] : ToData $ TypeWrapper $ FreeGroup α where
     return Data.mkObj [("X", x)]
 
 instance : ToMrdiType $ GAPWrapper $ FreeGroup α where
-  toMrdiType _ _ := return MrdiType.str "GAP.GapObj"
+  toMrdiType _ _ := return MrdiType.str "GapObj"
 
 instance [Fintype α] : ToData $ GAPWrapper $ FreeGroup α where
   toData _ _ := do
@@ -372,18 +383,30 @@ section PresentedGroup
 
 /- Presented Group uses a Set of relations, which is noncomputable. -/
 
+instance [FinEnum α] : ToData $ GAPWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
+  toData uuids _ :=
+    return Data.mkObj
+      [("GapType", Data.str "IsSubgroupFpGroup"), ("freeGroup", Data.str (toString uuids[0]!)), ("relators", ← toData uuids rels)]
+
+instance [FinEnum α] : ToRef $ GAPWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
+  toRef uuids g := return mk none (← toMrdiType [] (GAPWrapper.get_t g)) (← toData uuids g) none none
+
 instance : ToMrdiType $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
   toMrdiType _ _ := return MrdiType.str "FPGroup"
 
 /-- uuids[0] should be the uuid for the free group -/
 instance [FinEnum α] : ToData $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
-  toData uuids _ := do
-    let x := Data.mkObj
-      [("GapType", Data.str "IsSubgroupFpGroup"), ("freeGroup", Data.str (toString uuids[0]!)), ("relators", ← toData uuids rels)]
-    return Data.mkObj [("X", x)]
+  toData uuids _ :=
+    return Data.mkObj [("X", Data.str (toString uuids[1]!))]
 
-instance [Fintype α] : ToRefs $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
-  toRefs uuids _ := return mkRefs [(uuids[0]!, ← (GAPFreeGroupRef α).toRef uuids (default : FreeGroup α))]
+instance [FinEnum α] : ToRefs $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
+  toRefs uuids g := return mkRefs [
+    (uuids[0]!, ← (GAPFreeGroupRef α).toRef uuids (default : FreeGroup α)),
+    (uuids[1]!, ← toRef uuids (changeWrapper g))]
+
+/- TODO delete this instance. it's for debugging. -/
+instance [FinEnum α] : ToMrdi $ TypeWrapper $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where
+  toMrdi uuids g := return ⟨oscarNs, ← toMrdiType uuids g, ← toData uuids g, ← toRefs uuids g, uuids[2]!⟩
 
 /- TODO delete this instance. it's for debugging. -/
 instance [FinEnum α] : ToMrdi $ FreeGroup α ⧸ Subgroup.normalClosure (List.toSet rels) where

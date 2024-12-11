@@ -58,18 +58,7 @@ def julia (command : String) (mrdi : Mrdi) (trace : Bool := False) : MetaM Mrdi 
 /-- Sends the `command` and then the `val` to the server and returns the returns an `Expr` of type `α` object -/
 def julia' (command : String) (val : Expr) {u} (α : Q(Type u)) (trace : Bool := False) : MetaM Expr := do
   let mrdi : Mrdi ← IO.MrdiFile.Mrdi? val
-  let child ← juliaAccess.get
-  let (stdin, child) ← child.takeStdin
-  let stdin_stream := IO.FS.Stream.ofHandle stdin
-  stdin_stream.putStrLn command
-  stdin_stream.flush
-  IO.FS.Stream.writeMrdi stdin_stream mrdi
-  let stdout ← IO.asTask child.stdout.getLine
-  let s ← IO.ofExcept stdout.get
-  if s.startsWith "Error:" then
-    throwError ("Error in julia: " ++ s)
-  if trace then logInfo s
-  let mrdi ← IO.ofExcept (Mrdi.parse s)
+  let mrdi ← julia command mrdi trace
   evalMrdi α mrdi
 
 /-- Sends the mrdi to julia and it should send it back -/

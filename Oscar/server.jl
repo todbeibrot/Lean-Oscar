@@ -150,8 +150,8 @@ function kbmag()
         words = split(equation, "=")
         lhs_string = String(words[1])
         rhs_string = String(words[2])
-        (success_lhs, lhs, _, _, _) = GAP.evalstr_ex(lhs_string * ";;")[1]
-        (success_rhs, rhs, _, _, _) = GAP.evalstr_ex(rhs_string * ";;")[1]
+        (success_lhs, lhs, _, _, _) = GAP.gap_to_julia(GAP.evalstr_ex(lhs_string * ";;")[1])
+        (success_rhs, rhs, _, _, _) = GAP.gap_to_julia(GAP.evalstr_ex(rhs_string * ";;")[1])
         if !(success_lhs && success_rhs)
             error("failed to evaluate words in GAP:\n " * lhs_string * ",\n" * rhs_string)
         end
@@ -198,7 +198,8 @@ function check_input_and_execute()
                 println("Input doesn't match the specified string.")
             end
         catch err
-            println("Error: ", err)
+            one_line_err = replace(string(err), r"[\n\r]+" => "---")
+            println("Error: ", one_line_err)
         end
     end
 end
