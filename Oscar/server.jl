@@ -185,7 +185,7 @@ function check_input_and_execute()
             if cmd == "exit"
                 break
             elseif cmd == "start server"
-                println("server started")
+                println("Server started | Julia v$(VERSION) | Oscar v$(Pkg.installed()["Oscar"])")
             elseif cmd == "echo"
                 echo()
             elseif cmd == "matrix inverse"
