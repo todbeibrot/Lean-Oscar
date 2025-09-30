@@ -175,8 +175,7 @@ theorem mk_not_right {α : Type u} {x : α} {b : Bool} :
 
 theorem aux {α : Type u} (x : α) :
     FreeGroup.mk [(x, true), (x, false)] = 1 := by
-  rw [← Bool.not_true]
-  exact mk_not_right
+  rw [← Bool.not_true, mk_not_right]
 
 theorem start_equations {α : Type u} (rels : Set (FreeGroup α)) (x : α) :
     (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk [(x, true), (x, false)])) = 1 := by
