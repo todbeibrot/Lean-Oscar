@@ -165,17 +165,25 @@ section KBMAG
 
 def _root_.Group.isTrivial (G : Type) [Group G] := ∀x : G, x = 1
 
+theorem doubleton_eq (x y : α) : [x, y] = [x] ++ [y] := rfl
+
+theorem mk_not_right {α : Type u} {x : α} {b : Bool} :
+    FreeGroup.mk [(x, b), (x, !b)] = 1 := by
+  rw [doubleton_eq, ← FreeGroup.mul_mk, ← inv_inv (FreeGroup.mk [(x, !_)]), mul_inv_eq_one,
+    FreeGroup.inv_mk, FreeGroup.invRev]
+  simp
+
 theorem aux {α : Type u} (x : α) :
-  FreeGroup.mk [(x, true), (x, false)] = 1 := by
-    sorry
+    FreeGroup.mk [(x, true), (x, false)] = 1 := by
+  rw [← Bool.not_true, mk_not_right]
 
 theorem start_equations {α : Type u} (rels : Set (FreeGroup α)) (x : α) :
-  (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk [(x, true), (x, false)])) = 1 := by
-    simp [aux]
+    (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk [(x, true), (x, false)])) = 1 := by
+  simp [aux]
 
 theorem start_equations_inv {α : Type u} (rels : Set (FreeGroup α)) (x : α) :
-  (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk [(x, false), (x, true)])) = 1 := by
-    sorry
+    (@QuotientGroup.mk (FreeGroup α) _ (Subgroup.normalClosure rels) (FreeGroup.mk [(x, false), (x, true)])) = 1 := by
+  rw [← Bool.not_false, mk_not_right, QuotientGroup.mk_one]
 
 @[reducible]
 def PresentedGroup.mk {α : Type u} (rels : Set (FreeGroup α)) (l : List (α × Bool)) :=
